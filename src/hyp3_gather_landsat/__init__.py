@@ -1,5 +1,6 @@
 """Plugin to get landsat scenes from an input location."""
 
+import sklearn
 from importlib.metadata import version
 
 

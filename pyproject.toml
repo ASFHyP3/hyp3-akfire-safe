@@ -25,10 +25,10 @@ classifiers=[
 dependencies = [
     "hyp3lib>=3,<5",
     "gdal>=3",
-    "geopandas<1",
+    "fireatlas @ git+https://github.com/Earth-Information-System/fireatlas",
     "owslib==0.28.1",
     "pystac-client",
-    # TODO: insert Python dependencies as list here
+    # TODO: insert Python dependencies as list here "fireatlas @ git+https://github.com/Earth-Information-System/fireatlas",
 ]
 dynamic = ["version"]
 
@@ -49,10 +49,12 @@ Documentation = "https://hyp3-docs.asf.alaska.edu"
 [project.scripts]
 gather_landsat = "hyp3_gather_landsat.gather_landsat:main"
 pull_perimeter = "hyp3_gather_landsat.pull_perimeter:main"
+feds = "hyp3_gather_landsat.feds:main"
 
 [project.entry-points.hyp3]
 gather_landsat = "hyp3_gather_landsat.gather_landsat:main"
 pull_perimeter = "hyp3_gather_landsat.pull_perimeter:main"
+feds = "hyp3_gather_landsat.feds:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

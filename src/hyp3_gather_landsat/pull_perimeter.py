@@ -92,7 +92,7 @@ def get_name(extent: list, start: str, end: str) -> str:
     nstart = start.replace('-', '')
     nend = end.replace('-', '')
 
-    name = f'{name}_{strextent}_{nstart}_{nend}.json'
+    name = f'{name}_{strextent}_{nstart}_{nend}.parquet'
 
     return name
 
@@ -136,7 +136,7 @@ def pull_perimeter(
 
     lf = gpd.GeoDataFrame.from_features(features).set_crs('EPSG:4326')
 
-    lf.to_file(output_name, driver='GeoJSON')
+    lf.to_parquet(output_name)
 
     if bucket:
         upload_file_to_s3(Path(output_name), bucket, bucket_prefix)

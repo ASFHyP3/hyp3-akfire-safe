@@ -15,6 +15,9 @@ dependencies:
   # For running
   - hyp3lib>=3,<5
   - owslib==0.28.1
+  # For plotting
+  - folium
+  - jupyterlab
   # TODO: insert conda-forge dependencies as list here
   - pip:
       - -r requirements-static.txt

@@ -28,7 +28,6 @@ dependencies = [
     "fireatlas @ git+https://github.com/Earth-Information-System/fireatlas",
     "owslib==0.28.1",
     "pystac-client",
-    # TODO: insert Python dependencies as list here "fireatlas @ git+https://github.com/Earth-Information-System/fireatlas",
 ]
 dynamic = ["version"]
 

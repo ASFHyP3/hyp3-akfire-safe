@@ -25,7 +25,6 @@ classifiers=[
 dependencies = [
     "hyp3lib>=3,<5",
     "gdal>=3",
-    "geopandas<2",
     "owslib==0.34.1",
     "pystac-client",
     # TODO: insert Python dependencies as list here

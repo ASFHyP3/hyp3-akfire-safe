@@ -14,7 +14,7 @@ dependencies:
   - pytest-cov
   # For running
   - hyp3lib>=3,<5
-  - owslib==0.28.1
+  - owslib==0.34.1
   # For plotting
   - folium
   - jupyterlab

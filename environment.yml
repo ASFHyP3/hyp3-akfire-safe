@@ -4,7 +4,7 @@ channels:
   - nodefaults
 dependencies:
   - python>=3.10,<3.13
-  - gdal>=3
+  - gdal==3.11.0
   - pip
   # For packaging, and testing
   - setuptools_scm

@@ -39,6 +39,23 @@ Where:
 * `--end-date` is the end date of the images in the format (YYYY-MM-DD)
 * `--extent` is the bounding box in longitude and latitude coordinates in the format `min_lon min_lat max_lon max_lat`
 
+### `feds` workflow
+
+The `feds` command line tool can be run using the following structure:
+```bash
+python -m hyp3_gather_landsat ++process feds \
+  --path ./data \
+  --start-date 2025-06-01T00:00 \
+  --end-date 2025-08-01T00:00 \
+  --extent -169.01 52.37 -130.16 71.66
+```
+Where:
+
+* `--path` is the path for the folder that contain the text files
+* `--start-date` is the start date of the images in the format (YYYY-MM-DDTHH:MM)
+* `--end-date` is the end date of the images in the format (YYYY-MM-DDTHH:MM)
+* `--extent` is the bounding box in longitude and latitude coordinates in the format `min_lon min_lat max_lon max_lat`
+
 ### Credentials
 
 Generally, credentials are provided via environment variables, but some may be provided by command-line arguments or via a `.netrc` file. 

@@ -15,6 +15,7 @@ def main() -> None:
         choices=[
             'gather_landsat',
             'pull_perimeter',
+            'feds',
         ],
         default='gather_landsat',
         help='Select the HyP3 entrypoint to use',  # HyP3 entrypoints are specified in `pyproject.toml`

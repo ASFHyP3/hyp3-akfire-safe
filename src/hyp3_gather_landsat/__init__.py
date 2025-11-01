@@ -2,6 +2,8 @@
 
 from importlib.metadata import version
 
+import sklearn  # noqa
+
 
 __version__ = version(__name__)
 

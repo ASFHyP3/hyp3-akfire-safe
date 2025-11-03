@@ -113,7 +113,7 @@ def process_gather_landsat(
 
 
 def main() -> None:
-    """HyP3 entrypoint for hyp3_gather_landsat."""
+    """HyP3 entrypoint for hyp3_akfire_safe."""
     parser = ArgumentParser()
     parser.add_argument('--bucket', help='AWS S3 bucket HyP3 for upload the final product(s)')
     parser.add_argument('--bucket-prefix', default='', help='Add a bucket prefix to product(s)')

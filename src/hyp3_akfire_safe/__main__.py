@@ -1,4 +1,4 @@
-"""gather-landsat processing for HyP3."""
+"""akfire-safe processing for HyP3."""
 
 import argparse
 import logging
@@ -8,16 +8,16 @@ from importlib.metadata import entry_points
 
 
 def main() -> None:
-    """HyP3 entrypoint for hyp3_gather_landsat."""
+    """HyP3 entrypoint for hyp3_akfire_safe."""
     parser = ArgumentParser(prefix_chars='+', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
         '++process',
         choices=[
-            'gather_landsat',
             'pull_perimeter',
             'feds',
+            'gather_landsat',
         ],
-        default='gather_landsat',
+        default='pull_perimeter',
         help='Select the HyP3 entrypoint to use',  # HyP3 entrypoints are specified in `pyproject.toml`
     )
 

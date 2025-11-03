@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from hyp3_gather_landsat import pull_perimeter as pp
+from hyp3_akfire_safe import pull_perimeter as pp
 
 
 def test_get_product_name():

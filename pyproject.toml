@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "hyp3_gather_landsat"
+name = "hyp3_akfire_safe"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 authors = [
@@ -41,18 +41,18 @@ develop = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ASFHyP3/hyp3-gather-landsat"
+Homepage = "https://github.com/ASFHyP3/hyp3-akfire-safe"
 Documentation = "https://hyp3-docs.asf.alaska.edu"
 
 [project.scripts]
-gather_landsat = "hyp3_gather_landsat.gather_landsat:main"
-pull_perimeter = "hyp3_gather_landsat.pull_perimeter:main"
-feds = "hyp3_gather_landsat.feds:main"
+gather_landsat = "hyp3_akfire_safe.gather_landsat:main"
+pull_perimeter = "hyp3_akfire_safe.pull_perimeter:main"
+feds = "hyp3_akfire_safe.feds:main"
 
 [project.entry-points.hyp3]
-gather_landsat = "hyp3_gather_landsat.gather_landsat:main"
-pull_perimeter = "hyp3_gather_landsat.pull_perimeter:main"
-feds = "hyp3_gather_landsat.feds:main"
+gather_landsat = "hyp3_akfire_safe.gather_landsat:main"
+pull_perimeter = "hyp3_akfire_safe.pull_perimeter:main"
+feds = "hyp3_akfire_safe.feds:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

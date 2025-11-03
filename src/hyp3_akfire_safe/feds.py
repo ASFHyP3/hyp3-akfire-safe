@@ -9,7 +9,7 @@ from pathlib import Path
 from fireatlas import FireMain, FireTime, postprocess, preprocess, settings
 from hyp3lib.aws import upload_file_to_s3
 
-import hyp3_gather_landsat as hgl
+import hyp3_akfire_safe as has
 
 
 settings.READ_LOCATION = 'local'
@@ -66,12 +66,12 @@ def rewrite_files(root: str) -> None:
 
 def copy_aux() -> None:
     """Copy auxiliary files to work directory."""
-    source = Path(hgl.__file__).parent / 'aux' / 'VIIRS_Global_flaring_d.7_slope_0.029353_2017_web_v1.csv'
+    source = Path(has.__file__).parent / 'aux' / 'VIIRS_Global_flaring_d.7_slope_0.029353_2017_web_v1.csv'
     dest = Path('./FEDSinput/static_sources/VIIRS_Global_flaring_d.7_slope_0.029353_2017_web_v1.csv')
     dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy(source, dest)
 
-    source = Path(hgl.__file__).parent / 'aux' / 'nlcd_export_510m_simplified_latlon.tif'
+    source = Path(has.__file__).parent / 'aux' / 'nlcd_export_510m_simplified_latlon.tif'
     dest = Path('./FEDSpreprocessed/nlcd_export_510m_simplified_latlon.tif')
     dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy(source, dest)

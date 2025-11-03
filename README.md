@@ -1,34 +1,16 @@
-# HyP3 gather-landsat
+# HyP3 akfire-safe
 
 Plugin for AK fire safe applications
 
 ## Usage
 
-The HyP3-gather-landsat plugin provides workflows (accessible directly in Python or via a CLI) that can be used to download LANDSAT images or pull fire perimeters
-
-### `gather-landsat` workflow
-
-The `gather_landsat` command line tool can be run using the following structure:
-```bash
-python -m hyp3_gather_landsat ++process gather_landsat \
-  --start-date 2025-05-01 \
-  --end-date 2025-05-07 \
-  --location -163.97 54.756
-```
-Where:
-
-* `--start-date` is the start date of the images in the format (YYYY-MM-DD)
-* `--end-date` is the end date of the images in the format (YYYY-MM-DD)
-* `--location` is the longitude and latitude coordinates for the location point in the format `lon lat`
-
-> [!IMPORTANT]
-> Credentials are necessary to access Landsat data. See the Credentials section for more information.
+The HyP3-akfire-safe plugin provides workflows (accessible directly in Python or via a CLI) that can be used to pull/process fire perimeters or download LANDSAT images
 
 ### `pull-perimeter` workflow
 
 The `pull_perimeter` command line tool can be run using the following structure:
 ```bash
-python -m hyp3_gather_landsat ++process pull_perimeter \
+python -m hyp3_akfire_safe ++process pull_perimeter \
   --start-date 2025-06-01 \
   --end-date 2025-08-01 \
   --extent -169.01 52.37 -130.16 71.66
@@ -43,7 +25,7 @@ Where:
 
 The `feds` command line tool can be run using the following structure:
 ```bash
-python -m hyp3_gather_landsat ++process feds \
+python -m hyp3_akfire_safe ++process feds \
   --path ./data \
   --start-date 2025-06-01T00:00 \
   --end-date 2025-08-01T00:00 \
@@ -55,6 +37,24 @@ Where:
 * `--start-date` is the start date of the images in the format (YYYY-MM-DDTHH:MM)
 * `--end-date` is the end date of the images in the format (YYYY-MM-DDTHH:MM)
 * `--extent` is the bounding box in longitude and latitude coordinates in the format `min_lon min_lat max_lon max_lat`
+
+### `gather-landsat` workflow
+
+The `gather_landsat` command line tool can be run using the following structure:
+```bash
+python -m hyp3_akfire_safe ++process gather_landsat \
+  --start-date 2025-05-01 \
+  --end-date 2025-05-07 \
+  --location -163.97 54.756
+```
+Where:
+
+* `--start-date` is the start date of the images in the format (YYYY-MM-DD)
+* `--end-date` is the end date of the images in the format (YYYY-MM-DD)
+* `--location` is the longitude and latitude coordinates for the location point in the format `lon lat`
+
+> [!IMPORTANT]
+> Credentials are necessary to access Landsat data. See the Credentials section for more information.
 
 ### Credentials
 
@@ -77,24 +77,24 @@ For more information, please see: <https://boto3.amazonaws.com/v1/documentation/
 
 ## Developer Setup
 1. Ensure that conda is installed on your system (we recommend using [mambaforge](https://github.com/conda-forge/miniforge#mambaforge) to reduce setup times).
-2. Download a local version of the `hyp3-gather-landsat` repository (`git clone https://github.com/ASFHyP3/hyp3-gather-landsat.git`)
-3. In the base directory for this project call `mamba env create -f environment.yml` to create your Python environment, then activate it (`mamba activate hyp3-gather-landsat`)
+2. Download a local version of the `hyp3-akfire-safe` repository (`git clone https://github.com/ASFHyP3/hyp3-akfire-safe.git`)
+3. In the base directory for this project call `mamba env create -f environment.yml` to create your Python environment, then activate it (`mamba activate hyp3-akfire-safe`)
 4. Finally, install a development version of the package (`python -m pip install -e .`)
 
 To run all commands in sequence use:
 ```bash
-git clone https://github.com/ASFHyP3/hyp3-gather-landsat.git
-cd hyp3-gather-landsat
+git clone https://github.com/ASFHyP3/hyp3-akfire-safe.git
+cd hyp3-akfire-safe
 mamba env create -f environment.yml
-mamba activate hyp3-gather-landsat
+mamba activate hyp3-akfire-safe
 python -m pip install -e .
 ```
 
 ## Contributing
-Contributions to the HyP3 gather-landsat plugin are welcome! If you would like to contribute, please submit a pull request on the GitHub repository.
+Contributions to the HyP3 akfire-safe plugin are welcome! If you would like to contribute, please submit a pull request on the GitHub repository.
 
 ## Contact Us
-Want to talk about HyP3 gather-landsat? We would love to hear from you!
+Want to talk about HyP3 akfire-safe? We would love to hear from you!
 
 Found a bug? Want to request a feature?
-[open an issue](https://github.com/ASFHyP3/hyp3-gather-landsat/issues/new)
+[open an issue](https://github.com/ASFHyP3/hyp3-akfire-safe/issues/new)

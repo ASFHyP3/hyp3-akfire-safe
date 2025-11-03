@@ -1,4 +1,4 @@
-"""Plugin to get landsat scenes from an input location."""
+"""Plugin with workflows for akfire-safe."""
 
 from importlib.metadata import version
 

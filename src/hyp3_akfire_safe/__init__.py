@@ -1,6 +1,7 @@
 """Plugin with workflows for akfire-safe."""
 
 from importlib.metadata import version
+
 # this import is meant to fix the sklearn dependency for fireatlas
 import sklearn  # noqa
 

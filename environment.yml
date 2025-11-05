@@ -13,8 +13,10 @@ dependencies:
   - pytest-console-scripts
   - pytest-cov
   # For running
+  - geopandas
   - hyp3lib>=3,<5
-  - owslib==0.34.1
+  - owslib==0.35.0
+  - scikit-learn
   # For plotting
   - folium
   - jupyterlab

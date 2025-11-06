@@ -10,6 +10,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 - Added a new workflow `feds` to process fire perimeters using local files.
+- Added dependencies in `pyproject.toml` and `environment.yml`.
 
 ### Changed
 - Changed name of the plugin to `hyp3-akfire-safe`.

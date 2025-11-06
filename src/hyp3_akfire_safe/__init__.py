@@ -2,6 +2,7 @@
 
 from importlib.metadata import version
 
+# this import is meant to fix the sklearn bindings for fireatlas
 import sklearn  # noqa
 
 

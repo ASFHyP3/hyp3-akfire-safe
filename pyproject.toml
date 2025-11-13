@@ -25,7 +25,7 @@ dependencies = [
     "hyp3lib>=3,<5",
     "gdal>=3",
     "fireatlas @ git+https://github.com/Earth-Information-System/fireatlas@1.4.1",
-    "geopandas<1",
+    "geopandas",
     "scikit-learn",
     "owslib==0.35.0",
     "pystac-client",

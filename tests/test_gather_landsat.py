@@ -1,4 +1,4 @@
-from hyp3_gather_landsat import gather_landsat as process
+from hyp3_akfire_safe import gather_landsat as process
 
 
 def test_get_lc2_path():

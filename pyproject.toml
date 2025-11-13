@@ -3,11 +3,11 @@ requires = ["setuptools>=61.0", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "hyp3_gather_landsat"
+name = "hyp3_akfire_safe"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"
 authors = [
-    {name="username_for_github_actions", email="email_for@github_actions.com"},
+    {name="ASF SciDev Team", email="uaf-asf-scidev@alaska.edu"},
 ]
 description = "Plugin to get landsat scenes from an input location"
 license = {text = "BSD-3-Clause"}
@@ -20,15 +20,15 @@ classifiers=[
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
     "hyp3lib>=3,<5",
     "gdal>=3",
-    "geopandas<1",
-    "owslib==0.28.1",
+    "fireatlas @ git+https://github.com/Earth-Information-System/fireatlas@1.4.1",
+    "geopandas",
+    "scikit-learn",
+    "owslib==0.35.0",
     "pystac-client",
-    # TODO: insert Python dependencies as list here
 ]
 dynamic = ["version"]
 
@@ -43,16 +43,18 @@ develop = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ASFHyP3/hyp3-gather-landsat"
+Homepage = "https://github.com/ASFHyP3/hyp3-akfire-safe"
 Documentation = "https://hyp3-docs.asf.alaska.edu"
 
 [project.scripts]
-gather_landsat = "hyp3_gather_landsat.gather_landsat:main"
-pull_perimeter = "hyp3_gather_landsat.pull_perimeter:main"
+gather_landsat = "hyp3_akfire_safe.gather_landsat:main"
+pull_perimeter = "hyp3_akfire_safe.pull_perimeter:main"
+feds = "hyp3_akfire_safe.feds:main"
 
 [project.entry-points.hyp3]
-gather_landsat = "hyp3_gather_landsat.gather_landsat:main"
-pull_perimeter = "hyp3_gather_landsat.pull_perimeter:main"
+gather_landsat = "hyp3_akfire_safe.gather_landsat:main"
+pull_perimeter = "hyp3_akfire_safe.pull_perimeter:main"
+feds = "hyp3_akfire_safe.feds:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

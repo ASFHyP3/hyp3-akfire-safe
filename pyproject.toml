@@ -7,7 +7,7 @@ name = "hyp3_akfire_safe"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 authors = [
-    {name="username_for_github_actions", email="email_for@github_actions.com"},
+    {name="ASF SciDev Team", email="uaf-asf-scidev@alaska.edu"},
 ]
 description = "Plugin to get landsat scenes from an input location"
 license = {text = "BSD-3-Clause"}

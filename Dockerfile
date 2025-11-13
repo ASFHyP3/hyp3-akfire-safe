@@ -5,7 +5,7 @@ FROM condaforge/mambaforge:latest
 LABEL org.opencontainers.image.title="HyP3 akfire-safe "
 LABEL org.opencontainers.image.description="Plugin with workflows for akfire-safe"
 LABEL org.opencontainers.image.vendor="Alaska Satellite Facility"
-LABEL org.opencontainers.image.authors="username_for_github_actions <email_for@github_actions.com>"
+LABEL org.opencontainers.image.authors="ASF SciDev Team <uaf-asf-scidev@alaska.edu>"
 LABEL org.opencontainers.image.licenses="BSD-3-Clause"
 LABEL org.opencontainers.image.url="https://github.com/ASFHyP3/hyp3-akfire-safe"
 LABEL org.opencontainers.image.source="https://github.com/ASFHyP3/hyp3-akfire-safe"

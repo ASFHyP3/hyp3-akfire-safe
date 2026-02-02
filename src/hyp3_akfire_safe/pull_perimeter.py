@@ -124,17 +124,30 @@ def pull_perimeter(
     end_date = dt.datetime.strptime(end, '%Y-%m-%d')
     end = dt.datetime.strftime(end_date, '%Y-%m-%dT%H:%M:%S+00:00')
 
-    params = {'bbox': extent, 'datetime': [start + '/' + end], 'filter': 'farea>4'}
+    params = {'bbox': extent, 'datetime': [start + '/' + end]}
 
     features = iter_features_offset(
         api,
-        collection_id='public.eis_fire_lf_perimeter_nrt',
+        collection_id='public.eis_fire_snapshot_perimeter_nrt',
         params=params,
         page_size=1000,
         progress=True,
     )
 
-    lf = gpd.GeoDataFrame.from_features(features).set_crs('EPSG:4326')
+    lf = gpd.GeoDataFrame.from_features(features)
+    if lf.empty:
+        features = iter_features_offset(
+            api,
+            collection_id='public.eis_fire_lf_perimeter_archive',
+            params=params,
+            page_size=1000,
+            progress=True,
+        )
+
+        lf = gpd.GeoDataFrame.from_features(features)
+        if lf.empty:
+            raise ValueError('No fire perimeter found for the given parameters')
+    lf = lf.set_crs('EPSG:4326')
 
     lf.to_parquet(output_name)
 

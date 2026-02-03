@@ -43,15 +43,17 @@ Where:
 The `gather_landsat` command line tool can be run using the following structure:
 ```bash
 python -m hyp3_akfire_safe ++process gather_landsat \
-  --start-date 2025-05-01 \
-  --end-date 2025-05-07 \
-  --location -163.97 54.756
+  --scene-name LC09_L1GT_153230_20250928_20250928_02_T2 \
+  --aoi-db AlaskaFireHistory_Polygons_AKAlbersNAD83_geojson_24_25.geojson \
+  --fire-season 2025
+  --bands 7 8
 ```
 Where:
 
-* `--start-date` is the start date of the images in the format (YYYY-MM-DD)
-* `--end-date` is the end date of the images in the format (YYYY-MM-DD)
-* `--location` is the longitude and latitude coordinates for the location point in the format `lon lat`
+* `--scene-name` is the name of the LANDSAT scene
+* `--aoi-db` is the AOI database file path
+* `--fire-season` is the year of the fire season
+* `--bands` are the bands to extract
 
 > [!IMPORTANT]
 > Credentials are necessary to access Landsat data. See the Credentials section for more information.

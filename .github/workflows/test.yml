@@ -10,6 +10,10 @@ on:
       - main
       - develop
 
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
 jobs:
   call-pytest-workflow:
     # Docs: https://github.com/ASFHyP3/actions
@@ -20,6 +24,4 @@ jobs:
       local_package_name: hyp3_akfire_safe
       python_versions: >-
         ["3.10", "3.11", "3.12"]
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    

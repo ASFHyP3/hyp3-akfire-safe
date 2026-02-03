@@ -43,28 +43,3 @@ def test_find_intersection(scene_name, aoi_db, test_intersection):
 
     with pytest.raises(RuntimeError):
         gl.find_intersection(stac, Path(aoi_db), fireseason=2026)
-
-
-def test_download_scene(scene_name, test_intersection):
-    metadata, stac_gdf = gl.find_scene(scene_name)
-    band = 8
-    image = gl.download_scene(metadata, band)
-
-    assert image.exists()
-
-    image.unlink()
-
-
-def test_clip_image(scene_name, test_intersection):
-    metadata, stac_gdf = gl.find_scene(scene_name)
-    band = 8
-    image = gl.download_scene(metadata, band)
-    intersection = test_intersection
-    prefixes, filenames = gl.clip_image(image, intersection)
-
-    for i in range(len(prefixes)):
-        path = prefixes[i] / filenames[i]
-        assert path.exists()
-        path.unlink()
-    shutil.rmtree('2025')
-    image.unlink()

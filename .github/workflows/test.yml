@@ -11,21 +11,8 @@ on:
       - develop
 
 jobs:
-  set-environment:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          aws-access-key-id: ${{ secrets.AKFIRE_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AKFIRE_AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-west-2
-
   call-pytest-workflow:
-    needs: set-environment
+    # Docs: https://github.com/ASFHyP3/actions
     uses: ASFHyP3/actions/.github/workflows/reusable-pytest.yml@v0.21.0
     permissions:
       contents: read

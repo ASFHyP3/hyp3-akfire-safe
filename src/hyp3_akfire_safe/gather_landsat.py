@@ -197,8 +197,8 @@ def process_gather_landsat(
         aoi_db:  Filename of the geojson with AOIs.
         fireseason:  Year for the fire season.
         bands: Bands to extract from scene.
-        bucket: AWS S3 bucket HyP3 for upload the final product(s).
-        bucket_prefix: Add a bucket prefix to product(s).
+        publish_bucket: AWS S3 bucket HyP3 for upload the final product(s).
+        publish_bucket_prefix: Add a bucket prefix to product(s).
     """
     metadata, stac_gdf = find_scene(scene_name)
     intersection = find_intersection(stac_gdf, Path(aoi_db), fireseason)

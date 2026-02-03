@@ -60,9 +60,10 @@ def test_clip_image(scene_name, test_intersection):
     band = 8
     image = gl.download_scene(metadata, band)
     intersection = test_intersection
-    filepaths = gl.clip_image(image, intersection)
+    prefixes, filenames = gl.clip_image(image, intersection)
 
-    for path in filepaths:
+    for i in range(len(prefixes)):
+        path = prefixes[i] / filenames[i]
         assert path.exists()
         path.unlink()
     shutil.rmtree('2025')

@@ -5,9 +5,11 @@ import os
 from argparse import ArgumentParser
 from pathlib import Path
 
+import boto3
 import geopandas as gpd
 import pandas as pd
 import pystac_client
+from hyp3lib.aws import get_content_type, get_tag_set
 from osgeo import gdal
 
 
@@ -73,7 +75,7 @@ def find_intersection(stac: gpd.GeoDataFrame, aoi: Path, fireseason: int | None)
     return inter
 
 
-def clip_image(scene: Path, inter: gpd.GeoDataFrame) -> list[Path]:
+def clip_image(scene: Path, inter: gpd.GeoDataFrame) -> tuple[list[Path], list[str]]:
     """Clips the image using AOIs.
 
     Args:
@@ -83,21 +85,23 @@ def clip_image(scene: Path, inter: gpd.GeoDataFrame) -> list[Path]:
     Returns:
         filepaths: File paths of the clipped images.
     """
-    filepaths = []
+    prefixes = []
+    filenames = []
     ds = gdal.Open(scene.resolve(), gdal.GA_ReadOnly)
     print(inter['FIREYEAR'].iloc[0])
     for i, geom in enumerate(inter['geometry']):
         bbox = [geom.bounds[0], geom.bounds[3], geom.bounds[2], geom.bounds[1]]
         platform = f'L{scene.name[3]}'
-        filepath = Path(
-            f'{inter["FIREYEAR"].iloc[i]}/{inter["FIREID"].iloc[i]}/{platform}/{inter["FIREID"].iloc[i]}_{inter["id"].iloc[i]}_{scene.name.split("_")[-1]}'
-        )
+        prefix = Path(f'{inter["FIREYEAR"].iloc[i]}/{inter["FIREID"].iloc[i]}/{platform}/')
+        filename = f'{inter["FIREID"].iloc[i]}_{inter["id"].iloc[i]}_{scene.name.split("_")[-1]}'
+        filepath = prefix / filename
         filepath.parent.mkdir(parents=True, exist_ok=True)
         out = gdal.Translate(filepath.resolve(), ds, projWin=bbox)
         del out
-        filepaths.append(filepath)
+        prefixes.append(prefix)
+        filenames.append(filename)
 
-    return filepaths
+    return prefixes, filenames
 
 
 def find_scene(scene_name: str) -> tuple[dict, gpd.GeoDataFrame]:
@@ -143,13 +147,48 @@ def download_scene(metadata: dict, band: int) -> Path:
     return Path(filename)
 
 
+def upload_file_to_s3_with_publish_access_keys(
+    path_to_file: Path, bucket: str, prefix: str = '', s3_name: str | None = None
+) -> None:
+    """Uploads file to s3 bucket.
+
+    Args:
+        path_to_file: Path to tif file.
+        bucket:  Bucket name where the product will be stored.
+        prefix:  Prefix in the bucket.
+        s3_name: Output filename in the bucket.
+    """
+    try:
+        access_key_id = os.environ['PUBLISH_ACCESS_KEY_ID']
+        access_key_secret = os.environ['PUBLISH_SECRET_ACCESS_KEY']
+    except KeyError:
+        raise ValueError(
+            'Please provide S3 Bucket upload access key credentials via the '
+            'PUBLISH_ACCESS_KEY_ID and PUBLISH_SECRET_ACCESS_KEY environment variables'
+        )
+
+    s3_client = boto3.client('s3', aws_access_key_id=access_key_id, aws_secret_access_key=access_key_secret)
+
+    if s3_name is None:
+        s3_name = path_to_file.name
+    key = str(Path(prefix) / s3_name)
+
+    extra_args = {'ContentType': get_content_type(key)}
+
+    s3_client.upload_file(str(path_to_file), bucket, key, extra_args)
+
+    tag_set = get_tag_set(path_to_file.name)
+
+    s3_client.put_object_tagging(Bucket=bucket, Key=key, Tagging=tag_set)
+
+
 def process_gather_landsat(
     scene_name: str,
     aoi_db: str,
     bands: list,
     fireseason: int | None = None,
-    bucket: str = '',
-    bucket_prefix: str = '',
+    publish_bucket: str | None = None,
+    publish_bucket_prefix: str | None = None,
 ) -> None:
     """Download and clip Landsat image.
 
@@ -165,15 +204,21 @@ def process_gather_landsat(
     intersection = find_intersection(stac_gdf, Path(aoi_db), fireseason)
     for band in bands:
         image = download_scene(metadata, band)
-        filepaths = clip_image(image, intersection)
-        del filepaths
+        prefixes, filenames = clip_image(image, intersection)
+        if publish_bucket is not None:
+            for i in range(len(prefixes)):
+                path = prefixes[i] / filenames[i]
+                if publish_bucket_prefix is None:
+                    upload_file_to_s3_with_publish_access_keys(path, publish_bucket, str(prefixes[i]))
+                else:
+                    upload_file_to_s3_with_publish_access_keys(path, publish_bucket, publish_bucket_prefix)
 
 
 def main() -> None:
     """HyP3 entrypoint for hyp3_akfire_safe."""
     parser = ArgumentParser()
-    parser.add_argument('--bucket', help='AWS S3 bucket HyP3 for upload the final product(s)')
-    parser.add_argument('--bucket-prefix', default='', help='Add a bucket prefix to product(s)')
+    parser.add_argument('--publish-bucket', help='AWS S3 bucket HyP3 for upload the final product(s)')
+    parser.add_argument('--publish-bucket-prefix', help='Add a bucket prefix to product(s)')
     parser.add_argument('--scene-name', type=str, help='Name of the scene')
     parser.add_argument('--aoi-db', type=str, help='File path for the AOI database')
     parser.add_argument('--fire-season', type=int, help='Year of the fire season')
@@ -197,4 +242,6 @@ def main() -> None:
         aoi_db=args.aoi_db,
         bands=args.bands,
         fireseason=args.fire_season,
+        publish_bucket=args.publish_bucket,
+        publish_bucket_prefix=args.publish_bucket_prefix,
     )

@@ -47,27 +47,33 @@ def get_lc2_path(metadata: dict, band: int) -> str:
     return tif['href'].replace('https://landsatlook.usgs.gov/data/', f'/vsis3/{LANDSAT_BUCKET}/')
 
 
-def find_intersection(stac: gpd.GeoDataFrame, aoi: Path, fireseason: int | None) -> gpd.GeoDataFrame:
+def find_intersection(stac: gpd.GeoDataFrame, aoi: Path, points: Path, fireseason: int | None) -> gpd.GeoDataFrame:
     """Find intersection between image and AOIs.
 
     Args:
         stac: DataFrame with image metadata.
         aoi: Path of database with AOIs.
+        points: Path of database with fire points.
         fireseason: Year of the fire season.
 
     Returns:
         intersection: Dataframe with Polygons of the intersections.
     """
     gdf_aoi = gpd.read_file(str(aoi))
+    gdf_points = gpd.read_file(str(points))
+    gdf_points = gdf_points[['ID', 'DISCOVERYDATETIME']]
+    gdf_aoi = gpd.GeoDataFrame(
+        pd.merge(gdf_aoi, gdf_points, how='left', left_on='FIREID', right_on='ID'), geometry='geometry'
+    )
     if fireseason is not None:
         gdf_aoi = gdf_aoi[gdf_aoi['FIREYEAR'] == str(fireseason)]
     gdf_aoi = gdf_aoi.to_crs(str(stac.crs))
-    gdf_aoi['start_date'] = (
-        pd.to_datetime(gdf_aoi['PERIMETERDATE'], unit='ms').dt.tz_localize('America/Anchorage').dt.tz_convert('UTC')
-    )
-    gdf_aoi['end_date'] = (
-        pd.to_datetime(gdf_aoi['FPOUTDATE'], unit='ms').dt.tz_localize('America/Anchorage').dt.tz_convert('UTC')
-    )
+    gdf_aoi['start_date'] = pd.to_datetime(gdf_aoi['DISCOVERYDATETIME'], unit='ms').dt.tz_localize(
+        'America/Anchorage'
+    ).dt.tz_convert('UTC') - pd.Timedelta(days=2)
+    gdf_aoi['end_date'] = pd.to_datetime(gdf_aoi['FPOUTDATE'], unit='ms').dt.tz_localize(
+        'America/Anchorage'
+    ).dt.tz_convert('UTC') + pd.Timedelta(days=2)
     inter = gpd.overlay(stac, gdf_aoi, how='intersection').to_crs(f'{stac["proj:code"][0]}')
     inter = inter[(inter['start_date'] <= inter['datetime']) & (inter['end_date'] >= inter['datetime'])]
     if inter.empty:
@@ -90,7 +96,7 @@ def clip_image(scene: Path, inter: gpd.GeoDataFrame) -> tuple[list[Path], list[s
     ds = gdal.Open(scene.resolve(), gdal.GA_ReadOnly)
     print(inter['FIREYEAR'].iloc[0])
     for i, geom in enumerate(inter['geometry']):
-        bbox = [geom.bounds[0], geom.bounds[3], geom.bounds[2], geom.bounds[1]]
+        bbox = [geom.bounds[0] - 1000, geom.bounds[3] + 1000, geom.bounds[2] - 1000, geom.bounds[1] + 1000]
         platform = f'L{scene.name[3]}'
         prefix = Path(f'{inter["FIREYEAR"].iloc[i]}/{inter["FIREID"].iloc[i]}/{platform}/')
         filename = f'{inter["FIREID"].iloc[i]}_{inter["id"].iloc[i]}_{scene.name.split("_")[-1]}'
@@ -185,6 +191,7 @@ def upload_file_to_s3_with_publish_access_keys(
 def process_gather_landsat(
     scene_name: str,
     aoi_db: str,
+    points_db: str,
     bands: list,
     fireseason: int | None = None,
     publish_bucket: str | None = None,
@@ -195,13 +202,14 @@ def process_gather_landsat(
     Args:
         scene_name: Name of the LANDSAT scene.
         aoi_db:  Filename of the geojson with AOIs.
+        points_db:  Filename of the geojson with fire points.
         fireseason:  Year for the fire season.
         bands: Bands to extract from scene.
         publish_bucket: AWS S3 bucket HyP3 for upload the final product(s).
         publish_bucket_prefix: Add a bucket prefix to product(s).
     """
     metadata, stac_gdf = find_scene(scene_name)
-    intersection = find_intersection(stac_gdf, Path(aoi_db), fireseason)
+    intersection = find_intersection(stac_gdf, Path(aoi_db), Path(points_db), fireseason)
     for band in bands:
         image = download_scene(metadata, band)
         prefixes, filenames = clip_image(image, intersection)
@@ -221,6 +229,7 @@ def main() -> None:
     parser.add_argument('--publish-bucket-prefix', help='Add a bucket prefix to product(s)')
     parser.add_argument('--scene-name', type=str, help='Name of the scene')
     parser.add_argument('--aoi-db', type=str, help='File path for the AOI database')
+    parser.add_argument('--points-db', type=str, help='File path for the fire points database')
     parser.add_argument('--fire-season', type=int, help='Year of the fire season')
     parser.add_argument(
         '--bands',
@@ -240,6 +249,7 @@ def main() -> None:
     process_gather_landsat(
         scene_name=args.scene_name,
         aoi_db=args.aoi_db,
+        points_db=args.points_db,
         bands=args.bands,
         fireseason=args.fire_season,
         publish_bucket=args.publish_bucket,

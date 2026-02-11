@@ -45,6 +45,7 @@ The `gather_landsat` command line tool can be run using the following structure:
 python -m hyp3_akfire_safe ++process gather_landsat \
   --scene-name LC09_L1GT_153230_20250928_20250928_02_T2 \
   --aoi-db AlaskaFireHistory_Polygons_AKAlbersNAD83_geojson_24_25.geojson \
+  --points-db AlaskaFireHistory_Points_NAD83_geojson_24_25.geojson \
   --fire-season 2025
   --bands 7 8
 ```
@@ -52,6 +53,7 @@ Where:
 
 * `--scene-name` is the name of the LANDSAT scene
 * `--aoi-db` is the AOI database file path
+* `--points-db` is the points database file path
 * `--fire-season` is the year of the fire season
 * `--bands` are the bands to extract
 

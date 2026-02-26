@@ -35,10 +35,10 @@ def test_find_scene(scene_name):
         gl.find_scene(new_scene)
 
 
-def test_find_intersection(scene_name, aoi_db, test_intersection):
+def test_find_intersection(scene_name, aoi_db, points_db, test_intersection):
     metadata, stac = gl.find_scene(scene_name)
     intersection = test_intersection
     assert not intersection.empty
 
     with pytest.raises(RuntimeError):
-        gl.find_intersection(stac, Path(aoi_db), fireseason=2026)
+        gl.find_intersection(stac, Path(aoi_db), Path(points_db), fireseason=2026)

@@ -32,8 +32,6 @@ LANDSAT_BUCKET = 'usgs-landsat'
 log = logging.getLogger(__name__)
 
 
-auth = earthaccess.login()
-
 BUFFER = 1000  # Buffer zone 1000 meters
 
 
@@ -534,6 +532,8 @@ def main() -> None:
     logging.basicConfig(
         format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO
     )
+
+    earthaccess.login()
 
     if 'LC' in args.scene_name:
         process_gather_landsat(

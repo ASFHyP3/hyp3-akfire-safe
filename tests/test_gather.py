@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from hyp3_akfire_safe import gather_landsat as gl
+from hyp3_akfire_safe import gather as gl
 
 
 def test_get_lc2_path():
@@ -24,7 +24,7 @@ def test_get_lc2_path():
 
 
 def test_find_scene(scene_name):
-    metadata, gdf = gl.find_scene(scene_name)
+    metadata, gdf = gl.find_landsat(scene_name)
 
     assert metadata['id'] == scene_name
 
@@ -32,11 +32,15 @@ def test_find_scene(scene_name):
 
     new_scene = 'LC00_L1GT_000000_00000000_00000000_00_T0'
     with pytest.raises(RuntimeError):
-        gl.find_scene(new_scene)
+        gl.find_landsat(new_scene)
+
+
+def test_geo_viirs_intersects(geo_path):
+    assert gl.geo_viirs_intersects(geo_path, (-1, -1, 1, 1))
 
 
 def test_find_intersection(scene_name, aoi_db, points_db, test_intersection):
-    metadata, stac = gl.find_scene(scene_name)
+    metadata, stac = gl.find_landsat(scene_name)
     intersection = test_intersection
     assert not intersection.empty
 

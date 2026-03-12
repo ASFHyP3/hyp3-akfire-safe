@@ -47,12 +47,12 @@ Homepage = "https://github.com/ASFHyP3/hyp3-akfire-safe"
 Documentation = "https://hyp3-docs.asf.alaska.edu"
 
 [project.scripts]
-gather_landsat = "hyp3_akfire_safe.gather_landsat:main"
+gather = "hyp3_akfire_safe.gather:main"
 pull_perimeter = "hyp3_akfire_safe.pull_perimeter:main"
 feds = "hyp3_akfire_safe.feds:main"
 
 [project.entry-points.hyp3]
-gather_landsat = "hyp3_akfire_safe.gather_landsat:main"
+gather = "hyp3_akfire_safe.gather:main"
 pull_perimeter = "hyp3_akfire_safe.pull_perimeter:main"
 feds = "hyp3_akfire_safe.feds:main"
 

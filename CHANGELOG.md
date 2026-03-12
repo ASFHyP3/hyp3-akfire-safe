@@ -8,7 +8,11 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [3.1.0]
 
+### Added
+- Added a new function to download VIIRS data using `gather` workflow.
+
 ### Changed
+- Renamed `gather-landsat` to `gather`.
 - Changed `gather-landsat` to clip an image according to the fire perimeters of a given season.
 
 ## [3.0.0]

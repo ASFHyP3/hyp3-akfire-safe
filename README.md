@@ -38,17 +38,27 @@ Where:
 * `--end-date` is the end date of the images in the format (YYYY-MM-DDTHH:MM)
 * `--extent` is the bounding box in longitude and latitude coordinates in the format `min_lon min_lat max_lon max_lat`
 
-### `gather-landsat` workflow
+### `gather` workflow
 
-The `gather_landsat` command line tool can be run using the following structure:
+To obtain Landsat data, use the `gather` command line tool with the following structure:
 ```bash
-python -m hyp3_akfire_safe ++process gather_landsat \
+python -m hyp3_akfire_safe ++process gather \
   --scene-name LC09_L1GT_153230_20250928_20250928_02_T2 \
   --aoi-db AlaskaFireHistory_Polygons_AKAlbersNAD83_geojson_24_25.geojson \
   --points-db AlaskaFireHistory_Points_NAD83_geojson_24_25.geojson \
   --fire-season 2025
   --bands 7 8
 ```
+
+To obtain VIIRS data, use the `gather` command line tool with the following structure:
+```bash
+python -m hyp3_akfire_safe ++process gather \
+  --scene-name VJ102IMG.A2025186.0018.021.2025186064838 \
+  --aoi-db AlaskaFireHistory_Polygons_AKAlbersNAD83_geojson_24_25.geojson \
+  --points-db AlaskaFireHistory_Points_NAD83_geojson_24_25.geojson \
+  --bands 1 2
+```
+
 Where:
 
 * `--scene-name` is the name of the LANDSAT scene

@@ -27,6 +27,8 @@ gdal.UseExceptions()
 LANDSAT_CATALOG_API = 'https://landsatlook.usgs.gov/stac-server'
 LANDSAT_CATALOG = pystac_client.Client.open(LANDSAT_CATALOG_API)
 LANDSAT_BUCKET = 'usgs-landsat'
+S2_CATALOG_API = 'https://earth-search.aws.element84.com/v1'
+S2_CATALOG = pystac_client.Client.open(S2_CATALOG_API)
 
 
 log = logging.getLogger(__name__)
@@ -57,6 +59,40 @@ def get_lc2_path(metadata: dict, band: int) -> str:
         raise NotImplementedError(f'AK Fire Safe processing not available for this platform. {metadata["id"][:3]}')
 
     return tif['href'].replace('https://landsatlook.usgs.gov/data/', f'/vsis3/{LANDSAT_BUCKET}/')
+
+
+def get_s2_path(metadata: dict, band: int) -> str:
+    """Get the VSI S3 path to a Sentinel-2 image.
+
+    Args:
+        metadata: Dictionary from json file associated with the Sentinel-2 image.
+        band: Band to extract.
+
+    Returns:
+        Bucket link for Sentinel-2 image.
+    """
+    sband = str(band).zfill(2)
+    s3_path = metadata['properties']['earthsearch:s3_path'].replace('s3://', '')
+    return f'/vsis3/{s3_path}/B{sband}.tif'
+
+
+def download_s2(metadata: dict, band: int) -> Path:
+    """Download a Sentinel-2 image.
+
+    Args:
+        metadata: Dictionary with the scene metadata.
+        band: Band to extract.
+
+    Returns:
+        filename: Path of the downloaded image.
+    """
+    input_file = get_s2_path(metadata, band)
+    scene_id = metadata['id']
+    sband = str(band).zfill(2)
+    output_file = f'{scene_id}_B{sband}.tif'
+    gdal.Translate(output_file, input_file, format='GTiff')
+
+    return Path(output_file)
 
 
 def join_dataframes(aoi: Path, points: Path, crs: str) -> gpd.GeoDataFrame:
@@ -109,7 +145,7 @@ def find_intersection(stac: gpd.GeoDataFrame, aoi: Path, points: Path, fireseaso
     return inter
 
 
-def clip_landsat(scene: Path, inter: gpd.GeoDataFrame) -> tuple[list[Path], list[str]]:
+def clip_landsat_s2(scene: Path, inter: gpd.GeoDataFrame) -> tuple[list[Path], list[str]]:
     """Clips the image using AOIs.
 
     Args:
@@ -125,7 +161,10 @@ def clip_landsat(scene: Path, inter: gpd.GeoDataFrame) -> tuple[list[Path], list
     print(inter['FIREYEAR'].iloc[0])
     for i, geom in enumerate(inter['geometry']):
         bbox = [geom.bounds[0] - BUFFER, geom.bounds[3] + BUFFER, geom.bounds[2] - BUFFER, geom.bounds[1] + BUFFER]
-        platform = f'L{scene.name[3]}'
+        if scene.name[0] == 'L':
+            platform = f'L{scene.name[3]}'
+        elif scene.name[0] == 'S':
+            platform = f'S2{scene.name[2]}'
         prefix = Path(f'{inter["FIREYEAR"].iloc[i]}/{inter["FIREID"].iloc[i]}/{platform}/')
         filename = f'{inter["FIREID"].iloc[i]}_{inter["id"].iloc[i]}_{scene.name.split("_")[-1]}'
         filepath = prefix / filename
@@ -138,8 +177,8 @@ def clip_landsat(scene: Path, inter: gpd.GeoDataFrame) -> tuple[list[Path], list
     return prefixes, filenames
 
 
-def find_landsat(scene_name: str) -> tuple[dict, gpd.GeoDataFrame]:
-    """Finds a Landsat image.
+def find_landsat_s2(scene_name: str) -> tuple[dict, gpd.GeoDataFrame]:
+    """Search for a Landsat or Sentinel-2 image in STAC.
 
     Args:
         scene_name: Name of the scene.
@@ -147,7 +186,12 @@ def find_landsat(scene_name: str) -> tuple[dict, gpd.GeoDataFrame]:
     Returns:
         filename: Path of the downloaded image.
     """
-    search = LANDSAT_CATALOG.search(ids=[scene_name])
+    if 'L' == scene_name[0]:
+        search = LANDSAT_CATALOG.search(ids=[scene_name])
+    elif 'S' == scene_name[0]:
+        search = S2_CATALOG.search(ids=[scene_name])
+    else:
+        raise ValueError(f'The scene {scene_name} is not from Sentinel-2 or Landsat')
     item_collection = search.item_collection()
     item_collection.save_object('my_stac_results.json')
     gdf = gpd.read_file('my_stac_results.json')
@@ -162,7 +206,7 @@ def find_landsat(scene_name: str) -> tuple[dict, gpd.GeoDataFrame]:
 
 
 def download_landsat(metadata: dict, band: int) -> Path:
-    """Downloads a Landsat image.
+    """Download a Landsat image.
 
     Args:
         metadata: Dictionary with the scene metadata.
@@ -216,7 +260,7 @@ def upload_file_to_s3_with_publish_access_keys(
     s3_client.put_object_tagging(Bucket=bucket, Key=key, Tagging=tag_set)
 
 
-def process_gather_landsat(
+def process_gather_landsat_s2(
     scene_name: str,
     aoi_db: str,
     points_db: str,
@@ -225,7 +269,7 @@ def process_gather_landsat(
     publish_bucket: str | None = None,
     publish_bucket_prefix: str | None = None,
 ) -> None:
-    """Download and clip Landsat image.
+    """Download and clip a Landsat or Sentinel-2 image.
 
     Args:
         scene_name: Name of the LANDSAT scene.
@@ -236,11 +280,14 @@ def process_gather_landsat(
         publish_bucket: AWS S3 bucket HyP3 for upload the final product(s).
         publish_bucket_prefix: Add a bucket prefix to product(s).
     """
-    metadata, stac_gdf = find_landsat(scene_name)
+    metadata, stac_gdf = find_landsat_s2(scene_name)
     intersection = find_intersection(stac_gdf, Path(aoi_db), Path(points_db), fireseason)
     for band in bands:
-        image = download_landsat(metadata, band)
-        prefixes, filenames = clip_landsat(image, intersection)
+        if 'L' == scene_name[0]:
+            image = download_landsat(metadata, band)
+        elif 'S' == scene_name[0]:
+            image = download_s2(metadata, band)
+        prefixes, filenames = clip_landsat_s2(image, intersection)
         if publish_bucket is not None:
             for i in range(len(prefixes)):
                 path = prefixes[i] / filenames[i]
@@ -535,8 +582,8 @@ def main() -> None:
 
     earthaccess.login()
 
-    if 'LC' in args.scene_name:
-        process_gather_landsat(
+    if args.scene_name[0:2] in ['LC', 'S2']:
+        process_gather_landsat_s2(
             scene_name=args.scene_name,
             aoi_db=args.aoi_db,
             points_db=args.points_db,

@@ -269,7 +269,7 @@ def process_gather_landsat_s2(
     publish_bucket: str | None = None,
     publish_bucket_prefix: str | None = None,
 ) -> None:
-    """Download and clip Landsat or Sentinel-2 image.
+    """Download and clip a Landsat or Sentinel-2 image.
 
     Args:
         scene_name: Name of the LANDSAT scene.

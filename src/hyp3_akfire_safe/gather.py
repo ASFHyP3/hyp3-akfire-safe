@@ -178,7 +178,7 @@ def clip_landsat_s2(scene: Path, inter: gpd.GeoDataFrame) -> tuple[list[Path], l
 
 
 def find_landsat_s2(scene_name: str) -> tuple[dict, gpd.GeoDataFrame]:
-    """Finds a Landsat or Sentinel-2 image.
+    """Search for a Landsat or Sentinel-2 image in STAC.
 
     Args:
         scene_name: Name of the scene.

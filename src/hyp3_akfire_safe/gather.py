@@ -62,7 +62,7 @@ def get_lc2_path(metadata: dict, band: int) -> str:
 
 
 def get_s2_path(metadata: dict, band: int) -> str:
-    """Get Sentinel-2 link.
+    """Get the VSI S3 path to a Sentinel-2 image.
 
     Args:
         metadata: Dictionary from json file associated with the Sentinel-2 image.

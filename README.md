@@ -46,8 +46,18 @@ python -m hyp3_akfire_safe ++process gather \
   --scene-name LC09_L1GT_153230_20250928_20250928_02_T2 \
   --aoi-db AlaskaFireHistory_Polygons_AKAlbersNAD83_geojson_24_25.geojson \
   --points-db AlaskaFireHistory_Points_NAD83_geojson_24_25.geojson \
-  --fire-season 2025
+  --fire-season 2025 \
   --bands 7 8
+```
+
+To obtain Sentinel-2 data, use the `gather` command line tool with the following structure:
+```bash
+python -m hyp3_akfire_safe ++process gather \
+  --scene-name S2C_5WMP_20250711_0_L2A \
+  --aoi-db AlaskaFireHistory_Polygons_AKAlbersNAD83_geojson_24_25.geojson \
+  --points-db AlaskaFireHistory_Points_NAD83_geojson_24_25.geojson \
+  --fire-season 2025 \
+  --bands 4 5
 ```
 
 To obtain VIIRS data, use the `gather` command line tool with the following structure:

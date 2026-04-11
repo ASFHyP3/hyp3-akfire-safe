@@ -7,6 +7,7 @@ from argparse import ArgumentParser
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import asf_search as asf
 import boto3
 import earthaccess
 import geopandas as gpd
@@ -27,6 +28,8 @@ gdal.UseExceptions()
 LANDSAT_CATALOG_API = 'https://landsatlook.usgs.gov/stac-server'
 LANDSAT_CATALOG = pystac_client.Client.open(LANDSAT_CATALOG_API)
 LANDSAT_BUCKET = 'usgs-landsat'
+S1_CATALOG_API = 'https://cmr.earthdata.nasa.gov/stac/ASF'
+S1_CATALOG = pystac_client.Client.open(S1_CATALOG_API)
 S2_CATALOG_API = 'https://earth-search.aws.element84.com/v1'
 S2_CATALOG = pystac_client.Client.open(S2_CATALOG_API)
 
@@ -74,6 +77,25 @@ def get_s2_path(metadata: dict, band: int) -> str:
     sband = str(band).zfill(2)
     s3_path = metadata['properties']['earthsearch:s3_path'].replace('s3://', '')
     return f'/vsis3/{s3_path}/B{sband}.tif'
+
+
+def download_s1(metadata: dict, pol: str) -> Path:
+    """Download a Sentinel-1 RTC image.
+
+    Args:
+        metadata: Dictionary with the scene metadata.
+        pol: Polarization to extract.
+
+    Returns:
+        filename: Path of the downloaded image.
+    """
+    datapool = 'https://datapool.asf.alaska.edu/RTC/OPERA-S1'
+    scene_name = metadata['id']
+    input_file = f'{datapool}/{scene_name}_{pol}.tif'
+    output_file = input_file.split('/')[-1]
+    asf.download_urls([input_file], path='./')
+
+    return Path(output_file)
 
 
 def download_s2(metadata: dict, band: int) -> Path:
@@ -138,14 +160,17 @@ def find_intersection(stac: gpd.GeoDataFrame, aoi: Path, points: Path, fireseaso
     gdf_aoi = join_dataframes(aoi, points, str(stac.crs))
     if fireseason is not None:
         gdf_aoi = gdf_aoi[gdf_aoi['FIREYEAR'] == str(fireseason)]
-    inter = gpd.overlay(stac, gdf_aoi, how='intersection').to_crs(f'{stac["proj:code"][0]}')
+    try:
+        inter = gpd.overlay(stac, gdf_aoi, how='intersection').to_crs(f'{stac["proj:code"][0]}')
+    except KeyError:
+        inter = gpd.overlay(stac, gdf_aoi, how='intersection')  # The stac is in lat/lon coordinates
     inter = inter[(inter['start_date'] <= inter['datetime']) & (inter['end_date'] >= inter['datetime'])]
     if inter.empty:
         raise RuntimeError(f'The scene {stac["id"][0]} does not overlap with any fires in {fireseason}')
     return inter
 
 
-def clip_landsat_s2(scene: Path, inter: gpd.GeoDataFrame) -> tuple[list[Path], list[str]]:
+def clip_landsat_s1_s2(scene: Path, inter: gpd.GeoDataFrame) -> tuple[list[Path], list[str]]:
     """Clips the image using AOIs.
 
     Args:
@@ -160,11 +185,22 @@ def clip_landsat_s2(scene: Path, inter: gpd.GeoDataFrame) -> tuple[list[Path], l
     ds = gdal.Open(scene.resolve(), gdal.GA_ReadOnly)
     print(inter['FIREYEAR'].iloc[0])
     for i, geom in enumerate(inter['geometry']):
-        bbox = [geom.bounds[0] - BUFFER, geom.bounds[3] + BUFFER, geom.bounds[2] - BUFFER, geom.bounds[1] + BUFFER]
+        if scene.name[0] == 'O':
+            min_lon, min_lat, max_lon, max_lat = geom.bounds
+            xs, ys, z1, z2 = utm.from_latlon(np.array([min_lat, max_lat]), np.array([min_lon, max_lon]))
+            xs[0] = xs[0] - BUFFER
+            xs[-1] = xs[-1] + BUFFER
+            ys[0] = ys[0] - BUFFER
+            ys[-1] = ys[-1] + BUFFER
+            bbox = [xs[0], ys[1], xs[1], ys[0]]
+        else:
+            bbox = [geom.bounds[0] - BUFFER, geom.bounds[3] + BUFFER, geom.bounds[2] + BUFFER, geom.bounds[1] - BUFFER]
         if scene.name[0] == 'L':
             platform = f'L{scene.name[3]}'
         elif scene.name[0] == 'S':
             platform = f'S2{scene.name[2]}'
+        elif scene.name[0] == 'O':
+            platform = 'S1'
         prefix = Path(f'{inter["FIREYEAR"].iloc[i]}/{inter["FIREID"].iloc[i]}/{platform}/')
         filename = f'{inter["FIREID"].iloc[i]}_{inter["id"].iloc[i]}_{scene.name.split("_")[-1]}'
         filepath = prefix / filename
@@ -177,7 +213,7 @@ def clip_landsat_s2(scene: Path, inter: gpd.GeoDataFrame) -> tuple[list[Path], l
     return prefixes, filenames
 
 
-def find_landsat_s2(scene_name: str) -> tuple[dict, gpd.GeoDataFrame]:
+def find_landsat_s1_s2(scene_name: str) -> tuple[dict, gpd.GeoDataFrame]:
     """Search for a Landsat or Sentinel-2 image in STAC.
 
     Args:
@@ -188,10 +224,12 @@ def find_landsat_s2(scene_name: str) -> tuple[dict, gpd.GeoDataFrame]:
     """
     if 'L' == scene_name[0]:
         search = LANDSAT_CATALOG.search(ids=[scene_name])
-    elif 'S' == scene_name[0]:
+    elif 'OP' == scene_name[0:2]:
+        search = S1_CATALOG.search(ids=[scene_name])
+    elif 'S2' == scene_name[0:2]:
         search = S2_CATALOG.search(ids=[scene_name])
     else:
-        raise ValueError(f'The scene {scene_name} is not from Sentinel-2 or Landsat')
+        raise ValueError(f'The scene {scene_name} is not from Sentinel-1, 2 or Landsat')
     item_collection = search.item_collection()
     item_collection.save_object('my_stac_results.json')
     gdf = gpd.read_file('my_stac_results.json')
@@ -260,11 +298,11 @@ def upload_file_to_s3_with_publish_access_keys(
     s3_client.put_object_tagging(Bucket=bucket, Key=key, Tagging=tag_set)
 
 
-def process_gather_landsat_s2(
+def process_gather_landsat_s1_s2(
     scene_name: str,
     aoi_db: str,
     points_db: str,
-    bands: list,
+    bands_pols: list,
     fireseason: int | None = None,
     publish_bucket: str | None = None,
     publish_bucket_prefix: str | None = None,
@@ -276,18 +314,20 @@ def process_gather_landsat_s2(
         aoi_db:  Filename of the geojson with AOIs.
         points_db:  Filename of the geojson with fire points.
         fireseason:  Year for the fire season.
-        bands: Bands to extract from scene.
+        bands_pols: Bands or polarizations to extract from scene.
         publish_bucket: AWS S3 bucket HyP3 for upload the final product(s).
         publish_bucket_prefix: Add a bucket prefix to product(s).
     """
-    metadata, stac_gdf = find_landsat_s2(scene_name)
+    metadata, stac_gdf = find_landsat_s1_s2(scene_name)
     intersection = find_intersection(stac_gdf, Path(aoi_db), Path(points_db), fireseason)
-    for band in bands:
+    for band in bands_pols:
         if 'L' == scene_name[0]:
             image = download_landsat(metadata, band)
         elif 'S' == scene_name[0]:
             image = download_s2(metadata, band)
-        prefixes, filenames = clip_landsat_s2(image, intersection)
+        elif 'O' == scene_name[0]:
+            image = download_s1(metadata, band)
+        prefixes, filenames = clip_landsat_s1_s2(image, intersection)
         if publish_bucket is not None:
             for i in range(len(prefixes)):
                 path = prefixes[i] / filenames[i]
@@ -408,7 +448,7 @@ def clip_viirs(
         filenames: List of filenames for clipped files.
     """
     min_lon, min_lat, max_lon, max_lat = bbox
-    xs, ys, z1, z2 = utm.from_latlon(np.array([min_lat, max_lat]), np.array([min_lat, max_lat]))
+    xs, ys, z1, z2 = utm.from_latlon(np.array([min_lat, max_lat]), np.array([min_lon, max_lon]))
     xs[0] = xs[0] - BUFFER
     xs[-1] = xs[-1] + BUFFER
     ys[0] = ys[0] - BUFFER
@@ -566,15 +606,15 @@ def main() -> None:
     parser.add_argument('--points-db', type=str, help='File path for the fire points database')
     parser.add_argument('--fire-season', type=int, help='Year of the fire season')
     parser.add_argument(
-        '--bands',
+        '--bands-pols',
         type=str.split,
         nargs='+',
-        help='Bands to extract',
+        help='Bands or polarizations to extract',
     )
 
     args = parser.parse_args()
 
-    args.bands = [int(item) for sublist in args.bands for item in sublist]
+    args.bands_pols = [int(item) if item.isdigit() else item for sublist in args.bands_pols for item in sublist]
 
     logging.basicConfig(
         format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO
@@ -582,12 +622,12 @@ def main() -> None:
 
     earthaccess.login()
 
-    if args.scene_name[0:2] in ['LC', 'S2']:
-        process_gather_landsat_s2(
+    if args.scene_name[0:2] in ['LC', 'OP', 'S2']:
+        process_gather_landsat_s1_s2(
             scene_name=args.scene_name,
             aoi_db=args.aoi_db,
             points_db=args.points_db,
-            bands=args.bands,
+            bands_pols=args.bands_pols,
             fireseason=args.fire_season,
             publish_bucket=args.publish_bucket,
             publish_bucket_prefix=args.publish_bucket_prefix,
@@ -597,7 +637,9 @@ def main() -> None:
             scene_name=args.scene_name,
             aoi_db=args.aoi_db,
             points_db=args.points_db,
-            bands=args.bands,
+            bands=args.bands_pols,
             publish_bucket=args.publish_bucket,
             publish_bucket_prefix=args.publish_bucket_prefix,
         )
+    else:
+        raise ValueError(f'The scene name {args.scene_name} is not supported')

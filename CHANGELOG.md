@@ -11,6 +11,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 - Added a new function to download and clip VIIRS data using `gather` workflow.
 - Added a new function to download and clip Sentinel-2 data using `gather` workflow.
+- Added a new function to download and clip OPERA-S1 RTC data using `gather` workflow.
 
 ### Changed
 - Renamed `gather-landsat` to `gather`.

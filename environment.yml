@@ -1,4 +1,4 @@
-name: hyp3-akfire-safe-s1
+name: hyp3-akfire-safe
 channels:
   - conda-forge
   - nodefaults

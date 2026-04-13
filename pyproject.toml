@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0", "setuptools_scm[toml]>=6.2"]
+requires = ["setuptools>=82.0.1", "setuptools_scm[toml]>=10.0.5"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -24,8 +24,8 @@ classifiers=[
 dependencies = [
     "asf_search",
     "earthaccess",
-    "hyp3lib>=3,<5",
-    "gdal>=3",
+    "hyp3lib>=4.0.1,<5",
+    "gdal>=3.12.3",
     "fireatlas @ git+https://github.com/Earth-Information-System/fireatlas@1.4.1",
     "geopandas",
     "scikit-learn",

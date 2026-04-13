@@ -34,7 +34,7 @@ def test_get_s2_path():
 
 
 def test_find_scene(scene_name):
-    metadata, gdf = gl.find_landsat_s2(scene_name)
+    metadata, gdf = gl.find_landsat_s1_s2(scene_name)
 
     assert metadata['id'] == scene_name
 
@@ -42,7 +42,7 @@ def test_find_scene(scene_name):
 
     new_scene = 'LC00_L1GT_000000_00000000_00000000_00_T0'
     with pytest.raises(RuntimeError):
-        gl.find_landsat_s2(new_scene)
+        gl.find_landsat_s1_s2(new_scene)
 
 
 def test_geo_viirs_intersects(geo_path):
@@ -50,7 +50,7 @@ def test_geo_viirs_intersects(geo_path):
 
 
 def test_find_intersection(scene_name, aoi_db, points_db, test_intersection):
-    metadata, stac = gl.find_landsat_s2(scene_name)
+    metadata, stac = gl.find_landsat_s1_s2(scene_name)
     intersection = test_intersection
     assert not intersection.empty
 

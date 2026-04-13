@@ -47,7 +47,17 @@ python -m hyp3_akfire_safe ++process gather \
   --aoi-db AlaskaFireHistory_Polygons_AKAlbersNAD83_geojson_24_25.geojson \
   --points-db AlaskaFireHistory_Points_NAD83_geojson_24_25.geojson \
   --fire-season 2025 \
-  --bands 7 8
+  --bands-pols 7 8
+```
+
+To obtain OPERA-S1 RTC data, use the `gather` command line tool with the following structure:
+```bash
+python -m hyp3_akfire_safe ++process gather \
+  --scene-name OPERA_L2_RTC-S1_T014-028598-IW2_20250704T155521Z_20250711T083409Z_S1A_30_v1.0 \
+  --aoi-db AlaskaFireHistory_Polygons_AKAlbersNAD83_geojson_24_25.geojson \
+  --points-db AlaskaFireHistory_Points_NAD83_geojson_24_25.geojson \
+  --fire-season 2025 \
+  --bands-pols VV VH
 ```
 
 To obtain Sentinel-2 data, use the `gather` command line tool with the following structure:
@@ -57,7 +67,7 @@ python -m hyp3_akfire_safe ++process gather \
   --aoi-db AlaskaFireHistory_Polygons_AKAlbersNAD83_geojson_24_25.geojson \
   --points-db AlaskaFireHistory_Points_NAD83_geojson_24_25.geojson \
   --fire-season 2025 \
-  --bands 4 5
+  --bands-pols 4 5
 ```
 
 To obtain VIIRS data, use the `gather` command line tool with the following structure:
@@ -66,7 +76,7 @@ python -m hyp3_akfire_safe ++process gather \
   --scene-name VJ102IMG.A2025186.0018.021.2025186064838 \
   --aoi-db AlaskaFireHistory_Polygons_AKAlbersNAD83_geojson_24_25.geojson \
   --points-db AlaskaFireHistory_Points_NAD83_geojson_24_25.geojson \
-  --bands 1 2
+  --bands-pols 1 2
 ```
 
 Where:

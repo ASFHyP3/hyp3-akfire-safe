@@ -38,7 +38,7 @@ def test_data_directory():
 @pytest.fixture(scope='session')
 def test_intersection(aoi_db) -> gpd.GeoDataFrame:
     scene_name = 'LC09_L1GT_153230_20250928_20250928_02_T2'
-    metadata, stac_gdf = gl.find_landsat_s2(scene_name)
+    metadata, stac_gdf = gl.find_landsat_s1_s2(scene_name)
     points_db = Path(__file__).parent / 'data' / 'AlaskaFireHistory_Points_NAD83_geojson_24_25.geojson'
     fireseason = 2025
     intersection = gl.find_intersection(stac_gdf, Path(aoi_db), Path(points_db), fireseason)

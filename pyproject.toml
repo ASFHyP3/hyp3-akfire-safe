@@ -22,6 +22,8 @@ classifiers=[
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
+    "asf_search",
+    "earthaccess",
     "hyp3lib>=3,<5",
     "gdal>=3",
     "fireatlas @ git+https://github.com/Earth-Information-System/fireatlas@1.4.1",

@@ -13,6 +13,7 @@ dependencies:
   - pytest-console-scripts
   - pytest-cov
   # For running
+  - asf_search
   - earthaccess
   - geopandas
   - h5py

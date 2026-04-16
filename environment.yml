@@ -4,7 +4,7 @@ channels:
   - nodefaults
 dependencies:
   - python>=3.10,<3.13
-  - gdal==3.11.0
+  - gdal=3.10
   - pip
   # For packaging, and testing
   - setuptools_scm
@@ -13,10 +13,16 @@ dependencies:
   - pytest-console-scripts
   - pytest-cov
   # For running
+  - asf_search
+  - earthaccess
   - geopandas
+  - h5py
   - hyp3lib>=3,<5
   - owslib==0.35.0
+  - pyresample
+  - rasterio
   - scikit-learn
+  - utm
   # For plotting
   - folium
   - jupyterlab

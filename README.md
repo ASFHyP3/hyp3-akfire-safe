@@ -38,20 +38,54 @@ Where:
 * `--end-date` is the end date of the images in the format (YYYY-MM-DDTHH:MM)
 * `--extent` is the bounding box in longitude and latitude coordinates in the format `min_lon min_lat max_lon max_lat`
 
-### `gather-landsat` workflow
+### `gather` workflow
 
-The `gather_landsat` command line tool can be run using the following structure:
+To obtain Landsat data, use the `gather` command line tool with the following structure:
 ```bash
-python -m hyp3_akfire_safe ++process gather_landsat \
-  --start-date 2025-05-01 \
-  --end-date 2025-05-07 \
-  --location -163.97 54.756
+python -m hyp3_akfire_safe ++process gather \
+  --scene-name LC09_L1GT_153230_20250928_20250928_02_T2 \
+  --aoi-db AlaskaFireHistory_Polygons_AKAlbersNAD83_geojson_24_25.geojson \
+  --points-db AlaskaFireHistory_Points_NAD83_geojson_24_25.geojson \
+  --fire-season 2025 \
+  --bands-pols 7 8
 ```
+
+To obtain OPERA-S1 RTC data, use the `gather` command line tool with the following structure:
+```bash
+python -m hyp3_akfire_safe ++process gather \
+  --scene-name OPERA_L2_RTC-S1_T014-028598-IW2_20250704T155521Z_20250711T083409Z_S1A_30_v1.0 \
+  --aoi-db AlaskaFireHistory_Polygons_AKAlbersNAD83_geojson_24_25.geojson \
+  --points-db AlaskaFireHistory_Points_NAD83_geojson_24_25.geojson \
+  --fire-season 2025 \
+  --bands-pols VV VH
+```
+
+To obtain Sentinel-2 data, use the `gather` command line tool with the following structure:
+```bash
+python -m hyp3_akfire_safe ++process gather \
+  --scene-name S2C_5WMP_20250711_0_L2A \
+  --aoi-db AlaskaFireHistory_Polygons_AKAlbersNAD83_geojson_24_25.geojson \
+  --points-db AlaskaFireHistory_Points_NAD83_geojson_24_25.geojson \
+  --fire-season 2025 \
+  --bands-pols 4 5
+```
+
+To obtain VIIRS data, use the `gather` command line tool with the following structure:
+```bash
+python -m hyp3_akfire_safe ++process gather \
+  --scene-name VJ102IMG.A2025186.0018.021.2025186064838 \
+  --aoi-db AlaskaFireHistory_Polygons_AKAlbersNAD83_geojson_24_25.geojson \
+  --points-db AlaskaFireHistory_Points_NAD83_geojson_24_25.geojson \
+  --bands-pols 1 2
+```
+
 Where:
 
-* `--start-date` is the start date of the images in the format (YYYY-MM-DD)
-* `--end-date` is the end date of the images in the format (YYYY-MM-DD)
-* `--location` is the longitude and latitude coordinates for the location point in the format `lon lat`
+* `--scene-name` is the name of the LANDSAT scene
+* `--aoi-db` is the AOI database file path
+* `--points-db` is the points database file path
+* `--fire-season` is the year of the fire season
+* `--bands` are the bands to extract
 
 > [!IMPORTANT]
 > Credentials are necessary to access Landsat data. See the Credentials section for more information.

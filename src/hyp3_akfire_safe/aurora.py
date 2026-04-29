@@ -10,19 +10,27 @@ from sqlalchemy import URL, create_engine
 from sqlalchemy.engine import Engine
 
 
-proxy_host_name = os.environ['PROXY_HOST_NAME']
-port = int(os.environ['PORT'])
-db_name = os.environ['DB_NAME']
-db_user_name = os.environ['DB_USER_NAME']
-aws_region = os.environ['AWS_REGION']
+# Needs to be set as environment variable in Hyp3
+DB_HOST = os.environ['DB_HOST']
+
+# AWS Defaults
+DB_PORT = os.environ.get('DB_PORT', 5432)
+DB_NAME = os.environ.get('DB_NAME', 'postgres')
+DB_USER = os.environ.get('DB_USER', 'postgres')
+AWS_REGION = os.environ.get('AWS_REGION', 'us-west-2')
 
 
-# TODO: Need an IAM user/role that is created on deployment
+# For use in HyP3, access info needs to be set as environment variable in CI/CD
 def get_auth_token(aws_profile: str | None = None) -> str:
     """Retrieves an AWS RDS token for use as a password for DB connections."""
     session = boto3.Session(profile_name=aws_profile)
     client = session.client('rds')
-    token = client.generate_db_auth_token(DBHostname=proxy_host_name,Port=port,DBUsername=db_user_name,Region=aws_region)
+    token = client.generate_db_auth_token(
+        DBHostname=DB_HOST,
+        Port=DB_PORT,
+        DBUsername=DB_USER,
+        Region=AWS_REGION,
+    )
     return token
 
 
@@ -30,11 +38,11 @@ def get_db_connection() -> psycopg2.extensions.connection:
     """Creates a PostgreSQL connection for queries and extension management."""
     token = get_auth_token()
     connection = psycopg2.connect(
-        host=proxy_host_name,
-        dbname=db_name,
-        user=db_user_name,
+        host=DB_HOST,
+        dbname=DB_NAME,
+        user=DB_USER,
         password=token,
-        port=port,
+        port=DB_PORT,
         sslmode='require'
     )
     return connection
@@ -45,10 +53,10 @@ def get_db_engine() -> Engine:
     token = get_auth_token()
     url_object = URL.create(
         "postgresql",
-        username=db_user_name,
+        username=DB_USER,
         password=token,
-        host=proxy_host_name,
-        database=db_name,
+        host=DB_HOST,
+        database=DB_NAME,
     )
     engine = create_engine(url_object, plugins=["geoalchemy2"])
     return engine
@@ -71,12 +79,12 @@ def check_postgis_extension() -> str:
     return result
 
 
-def create_feds_table(
+def upload_parquet_to_db(
     geoparquet_path: str | Path,
-    table_name: str,
+    table_name: str = 'feds_table',
     schema: str = "public",
     if_exists: str = "append",
-    geometry_columns: list[str] = ['hull', 'fline', 'nfp']
+    geometry_columns: list[str] = ['hull', 'fline', 'nfp'],
 ) -> None:
     """Read a GeoParquet file and write its columns to Amazon RDS PostgreSQL/PostGIS.
 
@@ -105,7 +113,33 @@ def create_feds_table(
     )
 
 
-def query_feds_table(query: str) -> None:
-    """Query the database."""
-    # TODO: 
-    return None
+def upload_gdf_to_db(
+    gdf: gpd.geodataframe.GeoDataFrame,
+    table_name: str = 'feds_table',
+    schema: str = "public",
+    if_exists: str = "append",
+    geometry_columns: list[str] = ['hull', 'fline', 'nfp'],
+) -> None:
+    """Upload a GeoDataFrame to Amazon RDS PostgreSQL/PostGIS.
+
+    Args:
+    -----
+        geoparquet_path: Path to the input GeoParquet file.
+        rds_uri: SQLAlchemy connection URI, for example: postgresql+psycopg2://user:password@host:5432/dbname
+        table_name: Destination table name.
+        schema: PostgreSQL schema name.
+        if_exists: One of: "fail", "replace", or "append".
+        geometry_columns: List of columns with geometry types.
+    """
+    for geom_col in geometry_columns:
+        gdf.set_geometry(geom_col)
+
+    engine = get_db_engine()
+
+    gdf.to_postgis(
+        name=table_name,
+        con=engine,
+        schema=schema,
+        if_exists=if_exists,
+        index=False,
+    )

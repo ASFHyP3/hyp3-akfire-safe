@@ -110,6 +110,7 @@ def feds(
     end: str,
     bucket: str | None = None,
     bucket_prefix: str = '',
+    upload_to_db: bool = False,
 ) -> None:
     """This runs the FEDS algorithm.
 
@@ -120,6 +121,7 @@ def feds(
         end:  The end date of the images
         bucket: AWS S3 bucket HyP3 for upload the final product(s)
         bucket_prefix: Add a bucket prefix to product(s)
+        upload_to_db: Whether or not to upload the data to an AWS Aurora database.
     """
     # This preprocess the files from GINA
     rewrite_files(path)
@@ -166,6 +168,9 @@ def feds(
     output_name = get_name(extent, start, end)
     allfires_gdf.to_parquet(output_name)
 
+    if upload_to_db:
+        has.aurora.upload_gdf_to_db(allfires_gdf)
+
     if bucket:
         upload_file_to_s3(Path(output_name), bucket, bucket_prefix)
 
@@ -175,15 +180,10 @@ def main() -> None:
     parser = ArgumentParser()
     parser.add_argument('--bucket', help='AWS S3 bucket HyP3 for upload the final product(s)')
     parser.add_argument('--bucket-prefix', default='', help='Add a bucket prefix to product(s)')
+    parser.add_argument('--upload-to-db', type=bool, default=False, help='Add the data to the AWS Aurora database.')
     parser.add_argument('--start-date', type=str, help='Start date of the images (YYYY-MM-DDTHH:MM)')
     parser.add_argument('--end-date', type=str, help='End date of the images (YYYY-MM-DDTHH:MM)')
-    # TODO: Your arguments here
-    parser.add_argument(
-        '--extent',
-        type=str.split,
-        nargs='+',
-        help='min_lon min_lat max_lon max_lat',
-    )
+    parser.add_argument('--extent', type=str.split, nargs='+', help='min_lon min_lat max_lon max_lat')
     parser.add_argument('--path', type=str, help='Folder path with fire pixels')
 
     args = parser.parse_args()
@@ -197,4 +197,5 @@ def main() -> None:
         end=args.end_date,
         bucket=args.bucket,
         bucket_prefix=args.bucket_prefix,
+        upload_to_db=args.upload_to_db,
     )

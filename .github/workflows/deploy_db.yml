@@ -1,0 +1,54 @@
+name: Deploy database to AWS
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.V2_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.V2_AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.V2_AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: 3.13
+
+      - run: |
+          jq -n '{"Parameters": $ARGS.named}' \
+            --arg VpcId '${{ secrets.VPC_ID }}' \
+            --arg SubnetIds '${{ secrets.SUBNET_IDS }}' \
+            > parameters.json
+
+      - name: Package and deploy
+        shell: bash
+        run: |
+          [ -z ${{ secrets.CLOUDFORMATION_ROLE_ARN }} ] && export ROLE_STATEMENT="" \
+            || export ROLE_STATEMENT="--role-arn ${{ secrets.CLOUDFORMATION_ROLE_ARN }}"
+
+          aws cloudformation package \
+            --template-file cloudformation.yml \
+            --s3-bucket ${{ secrets.TEMPLATE_BUCKET }} \
+            --output-template-file packaged.yml
+          aws cloudformation deploy \
+            --stack-name feds-db \
+            --template-file packaged.yml \
+            $ROLE_STATEMENT \
+            --capabilities CAPABILITY_IAM \
+            --parameter-overrides file://parameters.json

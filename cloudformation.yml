@@ -1,8 +1,14 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: Minimal Aurora PostgreSQL Cluster
 
-# TODO: IAM User/role/policy?
-# TODO: Permissions for user access?
+
+Parameters:
+  InstanceSubnetIds:
+    Type: String
+
+  VpcIds:
+    Type: String
+
 
 Resources:
   DBSubnetGroup:
@@ -10,7 +16,7 @@ Resources:
     Properties:
       DBSubnetGroupDescription: Subnet group for Aurora
       SubnetIds:
-        - # TODO:
+        - !Ref InstanceSubnetIds
 
   DBCluster:
     Type: AWS::RDS::DBCluster
@@ -19,7 +25,7 @@ Resources:
       EngineVersion: "15.3"
       DBSubnetGroupName: !Ref DBSubnetGroup
       VpcSecurityGroupIds:
-        - # TODO:
+        - !Ref VpcIds
 
   DBInstance:
     Type: AWS::RDS::DBInstance

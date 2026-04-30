@@ -3,11 +3,11 @@ Description: Minimal Aurora PostgreSQL Cluster
 
 
 Parameters:
-  InstanceSubnetIds:
-    Type: String
+  VpcSecurityGroupIds:
+    Type: List<AWS::EC2::SecurityGroup::Id>
 
-  VpcIds:
-    Type: String
+  InstanceSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
 
 
 Resources:
@@ -15,17 +15,18 @@ Resources:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
       DBSubnetGroupDescription: Subnet group for Aurora
-      SubnetIds:
-        - !Ref InstanceSubnetIds
+      SubnetIds: !Ref InstanceSubnetIds
 
   DBCluster:
     Type: AWS::RDS::DBCluster
     Properties:
       Engine: aurora-postgresql
-      EngineVersion: "15.3"
+      EngineVersion: "17.5"
       DBSubnetGroupName: !Ref DBSubnetGroup
-      VpcSecurityGroupIds:
-        - !Ref VpcIds
+      VpcSecurityGroupIds: !Ref VpcSecurityGroupIds
+      EnableIAMDatabaseAuthentication: True
+      MasterUsername: postgres
+      MasterUserAuthenticationType: iam-db-auth
 
   DBInstance:
     Type: AWS::RDS::DBInstance
@@ -33,6 +34,7 @@ Resources:
       DBClusterIdentifier: !Ref DBCluster
       DBInstanceClass: db.t3.medium
       Engine: aurora-postgresql
+
 
 Outputs:
   ClusterEndpoint:

@@ -66,7 +66,7 @@ def enable_postgis_extension() -> None:
     connection.commit()
 
 
-def check_postgis_extension() -> str | None:
+def check_postgis_extension() -> tuple | None:
     """Verifies that the PostGIS extension is enabled on the PostgreSQL database."""
     connection = get_db_connection()
     with connection.cursor() as cursor:

@@ -11,7 +11,7 @@ from sqlalchemy.engine import Engine
 
 
 # Needs to be set as environment variable in Hyp3
-DB_HOST = os.environ['DB_HOST']
+DB_HOST = os.environ.get('DB_HOST', None)
 
 # AWS Defaults
 DB_PORT = os.environ.get('DB_PORT', 5432)

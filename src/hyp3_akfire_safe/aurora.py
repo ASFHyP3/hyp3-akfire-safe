@@ -38,12 +38,7 @@ def get_db_connection() -> psycopg2.extensions.connection:
     """Creates a PostgreSQL connection for queries and extension management."""
     token = get_auth_token()
     connection = psycopg2.connect(
-        host=DB_HOST,
-        dbname=DB_NAME,
-        user=DB_USER,
-        password=token,
-        port=DB_PORT,
-        sslmode='require'
+        host=DB_HOST, dbname=DB_NAME, user=DB_USER, password=token, port=DB_PORT, sslmode='require'
     )
     return connection
 
@@ -52,13 +47,13 @@ def get_db_engine() -> Engine:
     """Creates a SQLAlchemy Engine for Geopanda's `to_postgis`."""
     token = get_auth_token()
     url_object = URL.create(
-        "postgresql",
+        'postgresql',
         username=DB_USER,
         password=token,
         host=DB_HOST,
         database=DB_NAME,
     )
-    engine = create_engine(url_object, plugins=["geoalchemy2"])
+    engine = create_engine(url_object, plugins=['geoalchemy2'])
     return engine
 
 
@@ -82,8 +77,8 @@ def check_postgis_extension() -> str:
 def upload_parquet_to_db(
     geoparquet_path: str | Path,
     table_name: str = 'feds_table',
-    schema: str = "public",
-    if_exists: str = "append",
+    schema: str = 'public',
+    if_exists: str = 'append',
     geometry_columns: list[str] = ['hull', 'fline', 'nfp'],
 ) -> None:
     """Read a GeoParquet file and write its columns to Amazon RDS PostgreSQL/PostGIS.
@@ -116,8 +111,8 @@ def upload_parquet_to_db(
 def upload_gdf_to_db(
     gdf: gpd.geodataframe.GeoDataFrame,
     table_name: str = 'feds_table',
-    schema: str = "public",
-    if_exists: str = "append",
+    schema: str = 'public',
+    if_exists: str = 'append',
     geometry_columns: list[str] = ['hull', 'fline', 'nfp'],
 ) -> None:
     """Upload a GeoDataFrame to Amazon RDS PostgreSQL/PostGIS.

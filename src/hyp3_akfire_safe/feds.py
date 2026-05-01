@@ -10,6 +10,7 @@ from fireatlas import FireMain, FireTime, postprocess, preprocess, settings
 from hyp3lib.aws import upload_file_to_s3
 
 import hyp3_akfire_safe as has
+from hyp3_akfire_safe.aurora import upload_gdf_to_db
 
 
 settings.READ_LOCATION = 'local'
@@ -169,7 +170,7 @@ def feds(
     allfires_gdf.to_parquet(output_name)
 
     if upload_to_db:
-        has.aurora.upload_gdf_to_db(allfires_gdf)
+        upload_gdf_to_db(allfires_gdf)
 
     if bucket:
         upload_file_to_s3(Path(output_name), bucket, bucket_prefix)

@@ -17,6 +17,8 @@ jobs:
       python_version: "3.10"
 
   deploy:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+from typing import Literal
 
 import boto3
 import geopandas as gpd
@@ -65,12 +66,12 @@ def enable_postgis_extension() -> None:
     connection.commit()
 
 
-def check_postgis_extension() -> str:
+def check_postgis_extension() -> str | None:
     """Verifies that the PostGIS extension is enabled on the PostgreSQL database."""
     connection = get_db_connection()
     with connection.cursor() as cursor:
         cursor.execute('SELECT postgis_full_version();')
-        result = cursor.fetchone()[0]
+        result = cursor.fetchone()
     return result
 
 
@@ -78,7 +79,7 @@ def upload_parquet_to_db(
     geoparquet_path: str | Path,
     table_name: str = 'feds_table',
     schema: str = 'public',
-    if_exists: str = 'append',
+    if_exists: Literal['fail', 'replace', 'append'] = 'append',
     geometry_columns: list[str] = ['hull', 'fline', 'nfp'],
 ) -> None:
     """Read a GeoParquet file and write its columns to Amazon RDS PostgreSQL/PostGIS.
@@ -112,7 +113,7 @@ def upload_gdf_to_db(
     gdf: gpd.geodataframe.GeoDataFrame,
     table_name: str = 'feds_table',
     schema: str = 'public',
-    if_exists: str = 'append',
+    if_exists: Literal['fail', 'replace', 'append'] = 'append',
     geometry_columns: list[str] = ['hull', 'fline', 'nfp'],
 ) -> None:
     """Upload a GeoDataFrame to Amazon RDS PostgreSQL/PostGIS.

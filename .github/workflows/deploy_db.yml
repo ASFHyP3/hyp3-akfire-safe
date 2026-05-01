@@ -4,16 +4,22 @@ on:
   push:
     tags:
       - 'v*'
-
-concurrency: ${{ github.workflow }}-${{ github.ref }}
+    branches:
+      - develop
 
 jobs:
+  call-version-info-workflow:
+    # Docs: https://github.com/ASFHyP3/actions
+    uses: ASFHyP3/actions/.github/workflows/reusable-version-info.yml@v0.20.0
+    permissions:
+      contents: read
+    with:
+      python_version: "3.10"
+
   deploy:
     runs-on: ubuntu-latest
-
     strategy:
       fail-fast: false
-
     steps:
       - uses: actions/checkout@v6.0.2
         with:
@@ -36,7 +42,26 @@ jobs:
             --arg SubnetIds '${{ secrets.SUBNET_IDS }}' \
             > parameters.json
 
-      - name: Package and deploy
+      - name: Package and deploy test
+        if: ${{ github.event_name != 'pull_request' && contains(needs.version-info.outputs.version_tag, '.dev') }}
+        shell: bash
+        run: |
+          [ -z ${{ secrets.CLOUDFORMATION_ROLE_ARN }} ] && export ROLE_STATEMENT="" \
+            || export ROLE_STATEMENT="--role-arn ${{ secrets.CLOUDFORMATION_ROLE_ARN }}"
+
+          aws cloudformation package \
+            --template-file cloudformation.yml \
+            --s3-bucket ${{ secrets.TEMPLATE_BUCKET }} \
+            --output-template-file packaged.yml
+          aws cloudformation deploy \
+            --stack-name feds-db-test \
+            --template-file packaged.yml \
+            $ROLE_STATEMENT \
+            --capabilities CAPABILITY_IAM \
+            --parameter-overrides file://parameters.json
+
+      - name: Package and deploy prod
+        if: ${{ github.event_name != 'pull_request' && ! contains(needs.version-info.outputs.version_tag, '.dev') }}
         shell: bash
         run: |
           [ -z ${{ secrets.CLOUDFORMATION_ROLE_ARN }} ] && export ROLE_STATEMENT="" \

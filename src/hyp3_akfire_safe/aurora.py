@@ -124,7 +124,7 @@ def upload_gdf_to_db(
 
     Args:
     -----
-        geoparquet_path: Path to the input GeoParquet file.
+        gdf: The GeoDataFrame to upload.
         rds_uri: SQLAlchemy connection URI, for example: postgresql+psycopg2://user:password@host:5432/dbname
         table_name: Destination table name.
         schema: PostgreSQL schema name.

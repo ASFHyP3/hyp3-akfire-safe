@@ -95,17 +95,12 @@ def upload_parquet_to_db(
     """
     gdf = gpd.read_parquet(geoparquet_path)
 
-    for geom_col in geometry_columns:
-        gdf.set_geometry(geom_col)
-
-    engine = get_db_engine()
-
-    gdf.to_postgis(
-        name=table_name,
-        con=engine,
+    upload_gdf_to_db(
+        gdf=gdf,
+        table_name=table_name,
         schema=schema,
         if_exists=if_exists,
-        index=False,
+        geometry_columns=geometry_columns,
     )
 
 

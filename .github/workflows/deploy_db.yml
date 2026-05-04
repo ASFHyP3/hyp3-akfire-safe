@@ -31,7 +31,6 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.V2_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.V2_AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.V2_AWS_SESSION_TOKEN }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       - uses: actions/setup-python@v6
@@ -40,7 +39,7 @@ jobs:
 
       - run: |
           jq -n '{"Parameters": $ARGS.named}' \
-            --arg VpcId '${{ secrets.VPC_ID }}' \
+            --arg VpcSecurityGroupIds '${{ secrets.VPC_SECURITY_GROUP_IDS }}' \
             --arg SubnetIds '${{ secrets.SUBNET_IDS }}' \
             > parameters.json
 

@@ -80,7 +80,7 @@ def upload_parquet_to_db(
     table_name: str = 'feds_table',
     schema: str = 'public',
     index_label: str = 'fireID',
-    if_exists: Literal['fail', 'replace', 'append'] = 'append',
+    if_exists: Literal['fail', 'replace', 'append'] = 'replace',
     geometry_columns: list[str] = ['hull', 'fline', 'nfp'],
 ) -> None:
     """Read a GeoParquet file and write its columns to Amazon RDS PostgreSQL/PostGIS.
@@ -112,7 +112,7 @@ def upload_gdf_to_db(
     table_name: str = 'feds_table',
     schema: str = 'public',
     index_label: str = 'fireID',
-    if_exists: Literal['fail', 'replace', 'append'] = 'append',
+    if_exists: Literal['fail', 'replace', 'append'] = 'replace',
     geometry_columns: list[str] = ['hull', 'fline', 'nfp'],
 ) -> None:
     """Upload a GeoDataFrame to Amazon RDS PostgreSQL/PostGIS.

@@ -68,7 +68,7 @@ def enable_postgis_extension() -> None:
 
 
 def fetch_one_from_db(query: str) -> tuple | None:
-    """Queries the database and returns the result of `fetchone`
+    """Queries the database and returns the result of `fetchone`.
 
     Args:
         query: The query to be run.
@@ -96,15 +96,21 @@ def check_users() -> tuple | None:
 def add_user_to_db(
     username: str,
     password: str,
-):
+) -> None:
+    """Add a read-only user to the database.
+
+    Args:
+        username: The username of the new user.
+        password: The password of the new user.
+    """
     connection = get_db_connection()
     with connection.cursor() as cursor:
-        cursor.execute(f'''
+        cursor.execute(f"""
             CREATE USER {username} IF NOT EXISTS WITH PASSWORD \'{password}\';
             GRANT SELECT ON ALL TABLES IN SCHEMA public TO {username};
             ALTER DEFAULT PRIVILEGES IN SCHEMA public
             GRANT SELECT ON TABLES TO {username};
-        ''')
+        """)
     connection.commit()
 
 
@@ -173,7 +179,8 @@ def upload_gdf_to_db(
     )
 
 
-def main():
+def main() -> None:
+    """CLI Entrypoint for enabling postgis, and adding read-only users."""
     parser = argparse.ArgumentParser(description='CLI entrypoint for adding read-only users and enabling PostGIS.')
     parser.add_argument('--username', type=str, default=None, help='The username for the new user.')
     parser.add_argument('--password', type=str, default=None, help='The password for the new user.')
@@ -196,4 +203,8 @@ def main():
         try:
             add_user_to_db(args.username, args.password)
         except psycopg2.errors.DuplicateObject:
-            print(f'User `{args.username}` already exists.')        
+            print(f'User `{args.username}` already exists.')
+
+
+if __name__ == '__main__':
+    main()

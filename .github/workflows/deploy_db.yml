@@ -1,0 +1,80 @@
+name: Deploy database to AWS
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - develop
+
+jobs:
+  call-version-info-workflow:
+    # Docs: https://github.com/ASFHyP3/actions
+    uses: ASFHyP3/actions/.github/workflows/reusable-version-info.yml@v0.20.0
+    permissions:
+      contents: read
+    with:
+      python_version: "3.10"
+
+  deploy:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.V2_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.V2_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: 3.13
+
+      - run: |
+          jq -n '{"Parameters": $ARGS.named}' \
+            --arg VpcSecurityGroupIds '${{ secrets.VPC_SECURITY_GROUP_IDS }}' \
+            --arg SubnetIds '${{ secrets.SUBNET_IDS }}' \
+            > parameters.json
+
+      - name: Package and deploy test
+        if: ${{ github.event_name != 'pull_request' && contains(needs.version-info.outputs.version_tag, '.dev') }}
+        shell: bash
+        run: |
+          [ -z ${{ secrets.CLOUDFORMATION_ROLE_ARN }} ] && export ROLE_STATEMENT="" \
+            || export ROLE_STATEMENT="--role-arn ${{ secrets.CLOUDFORMATION_ROLE_ARN }}"
+
+          aws cloudformation package \
+            --template-file cloudformation.yml \
+            --s3-bucket ${{ secrets.TEMPLATE_BUCKET }} \
+            --output-template-file packaged.yml
+          aws cloudformation deploy \
+            --stack-name feds-db-test \
+            --template-file packaged.yml \
+            $ROLE_STATEMENT \
+            --capabilities CAPABILITY_IAM \
+            --parameter-overrides file://parameters.json
+
+      - name: Package and deploy prod
+        if: ${{ github.event_name != 'pull_request' && ! contains(needs.version-info.outputs.version_tag, '.dev') }}
+        shell: bash
+        run: |
+          [ -z ${{ secrets.CLOUDFORMATION_ROLE_ARN }} ] && export ROLE_STATEMENT="" \
+            || export ROLE_STATEMENT="--role-arn ${{ secrets.CLOUDFORMATION_ROLE_ARN }}"
+
+          aws cloudformation package \
+            --template-file cloudformation.yml \
+            --s3-bucket ${{ secrets.TEMPLATE_BUCKET }} \
+            --output-template-file packaged.yml
+          aws cloudformation deploy \
+            --stack-name feds-db \
+            --template-file packaged.yml \
+            $ROLE_STATEMENT \
+            --capabilities CAPABILITY_IAM \
+            --parameter-overrides file://parameters.json

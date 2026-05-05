@@ -1,0 +1,42 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Minimal Aurora PostgreSQL Cluster
+
+
+Parameters:
+  VpcSecurityGroupIds:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+
+  InstanceSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+
+
+Resources:
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group for Aurora
+      SubnetIds: !Ref InstanceSubnetIds
+
+  DBCluster:
+    Type: AWS::RDS::DBCluster
+    Properties:
+      Engine: aurora-postgresql
+      EngineVersion: "17.5"
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VpcSecurityGroupIds: !Ref VpcSecurityGroupIds
+      EnableIAMDatabaseAuthentication: True
+      MasterUsername: postgres
+      MasterUserAuthenticationType: iam-db-auth
+
+  DBInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBClusterIdentifier: !Ref DBCluster
+      DBInstanceClass: db.t3.medium
+      Engine: aurora-postgresql
+
+
+Outputs:
+  ClusterEndpoint:
+    Description: Aurora Cluster Endpoint
+    Value: !GetAtt DBCluster.Endpoint.Address

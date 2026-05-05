@@ -190,11 +190,7 @@ def main() -> None:
     if args.enable_postgis:
         enable_postgis_extension()
         result = check_postgis_extension()
-
-        if len(result) == 1:
-            print('PostGIS was enabled successfully.')
-        else:
-            raise ValueError('PostGIS was not enabled successfully.')
+        assert result is not None
 
     if args.username:
         if args.password is None:

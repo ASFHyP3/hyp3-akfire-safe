@@ -78,3 +78,8 @@ jobs:
             $ROLE_STATEMENT \
             --capabilities CAPABILITY_IAM \
             --parameter-overrides file://parameters.json
+
+      # TODO: 
+      # 1. The deployment step needs to output the database hostname. 
+      # 2. The database hostname needs to be set as an environment variable in this action.cancel-timeout-minutes: 
+      # 3. The feds_db_setup script needs to be run with `${{ secrets.DB_READONLY_USERNAME }}` and `${{ DB_READONLY_PASSWORD }}`

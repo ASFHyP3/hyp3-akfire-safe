@@ -52,6 +52,7 @@ Documentation = "https://hyp3-docs.asf.alaska.edu"
 gather = "hyp3_akfire_safe.gather:main"
 pull_perimeter = "hyp3_akfire_safe.pull_perimeter:main"
 feds = "hyp3_akfire_safe.feds:main"
+feds_db_setup = "hyp3_akfire_safe.aurora:main"
 
 [project.entry-points.hyp3]
 gather = "hyp3_akfire_safe.gather:main"

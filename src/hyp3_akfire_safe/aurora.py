@@ -175,7 +175,6 @@ def upload_gdf_to_db(
         schema=schema,
         index_label=index_label,
         if_exists=if_exists,
-        index=False,
     )
 
 

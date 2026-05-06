@@ -14,7 +14,7 @@ jobs:
     permissions:
       contents: read
     with:
-      python_version: "3.10"
+      python_version: "3.13"
 
   deploy:
     permissions:
@@ -22,6 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+    env:
+      STACK_NAME: ${{ github.ref == 'refs/heads/main' && 'feds-db' || 'feds-db-test' }}
     steps:
       - uses: actions/checkout@v6.0.2
         with:
@@ -37,14 +39,19 @@ jobs:
         with:
           python-version: 3.13
 
+      - uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: environment.yml
+          create-args: >-
+            python=3.13
+
       - run: |
           jq -n '{"Parameters": $ARGS.named}' \
             --arg VpcSecurityGroupIds '${{ secrets.VPC_SECURITY_GROUP_IDS }}' \
             --arg InstanceSubnetIds '${{ secrets.SUBNET_IDS }}' \
             > parameters.json
 
-      - name: Package and deploy test
-        if: ${{ github.event_name != 'pull_request' && contains(needs.version-info.outputs.version_tag, '.dev') }}
+      - name: Package and deploy
         shell: bash
         run: |
           [ -z ${{ secrets.CLOUDFORMATION_ROLE_ARN }} ] && export ROLE_STATEMENT="" \
@@ -54,32 +61,25 @@ jobs:
             --template-file cloudformation.yml \
             --s3-bucket ${{ secrets.TEMPLATE_BUCKET }} \
             --output-template-file packaged.yml
+
           aws cloudformation deploy \
-            --stack-name feds-db-test \
+            --stack-name "$STACK_NAME" \
             --template-file packaged.yml \
             $ROLE_STATEMENT \
             --capabilities CAPABILITY_IAM \
             --parameter-overrides file://parameters.json
 
-      - name: Package and deploy prod
-        if: ${{ github.event_name != 'pull_request' && ! contains(needs.version-info.outputs.version_tag, '.dev') }}
-        shell: bash
+          aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
+            --query 'Stacks[0].Outputs' \
+            --output json > output.json
+
+      - name: Enable PostGIS and create a read-only user
+        shell: bash -l {0}
         run: |
-          [ -z ${{ secrets.CLOUDFORMATION_ROLE_ARN }} ] && export ROLE_STATEMENT="" \
-            || export ROLE_STATEMENT="--role-arn ${{ secrets.CLOUDFORMATION_ROLE_ARN }}"
-
-          aws cloudformation package \
-            --template-file cloudformation.yml \
-            --s3-bucket ${{ secrets.TEMPLATE_BUCKET }} \
-            --output-template-file packaged.yml
-          aws cloudformation deploy \
-            --stack-name feds-db \
-            --template-file packaged.yml \
-            $ROLE_STATEMENT \
-            --capabilities CAPABILITY_IAM \
-            --parameter-overrides file://parameters.json
-
-      # TODO: 
-      # 1. The deployment step needs to output the database hostname. 
-      # 2. The database hostname needs to be set as an environment variable in this action.cancel-timeout-minutes: 
-      # 3. The feds_db_setup script needs to be run with `${{ secrets.DB_READONLY_USERNAME }}` and `${{ DB_READONLY_PASSWORD }}`
+          DB_HOST=$(awk 'FNR == 4 {FS=": "; print $2}' outputs.json | sed s/["(\"|,)"]/""/g)
+          python -m pip install --no-deps .
+          feds_db_setup \
+            --username ${{ secrets.DB_READONLY_USERNAME }} \
+            --password ${{ secrets.DB_READONLY_PASSWORD }} \
+            --enable-postgis True

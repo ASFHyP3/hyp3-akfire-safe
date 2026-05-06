@@ -118,7 +118,6 @@ def upload_parquet_to_db(
     geoparquet_path: str | Path,
     table_name: str = 'feds_table',
     schema: str = 'public',
-    index_label: str = 'fireID',
     if_exists: Literal['fail', 'replace', 'append'] = 'replace',
     geometry_columns: list[str] = ['hull', 'fline', 'nfp'],
 ) -> None:
@@ -129,7 +128,6 @@ def upload_parquet_to_db(
         rds_uri: SQLAlchemy connection URI, for example: postgresql+psycopg2://user:password@host:5432/dbname
         table_name: Destination table name.
         schema: PostgreSQL schema name.
-        index_label: The name of the column to use as the index.
         if_exists: One of: "fail", "replace", or "append".
         geometry_columns: List of columns with geometry types.
     """
@@ -139,7 +137,6 @@ def upload_parquet_to_db(
         gdf=gdf,
         table_name=table_name,
         schema=schema,
-        index_label=index_label,
         if_exists=if_exists,
         geometry_columns=geometry_columns,
     )
@@ -149,7 +146,6 @@ def upload_gdf_to_db(
     gdf: gpd.geodataframe.GeoDataFrame,
     table_name: str = 'feds_table',
     schema: str = 'public',
-    index_label: str = 'fireID',
     if_exists: Literal['fail', 'replace', 'append'] = 'replace',
     geometry_columns: list[str] = ['hull', 'fline', 'nfp'],
 ) -> None:
@@ -160,7 +156,6 @@ def upload_gdf_to_db(
         rds_uri: SQLAlchemy connection URI, for example: postgresql+psycopg2://user:password@host:5432/dbname
         table_name: Destination table name.
         schema: PostgreSQL schema name.
-        index_label: The name of the column to use as the index.
         if_exists: One of: "fail", "replace", or "append".
         geometry_columns: List of columns with geometry types.
     """
@@ -173,8 +168,8 @@ def upload_gdf_to_db(
         name=table_name,
         con=engine,
         schema=schema,
-        index_label=index_label,
         if_exists=if_exists,
+        index=False,
     )
 
 

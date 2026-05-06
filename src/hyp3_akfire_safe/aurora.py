@@ -178,7 +178,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description='CLI entrypoint for adding read-only users and enabling PostGIS.')
     parser.add_argument('--username', type=str, default=None, help='The username for the new user.')
     parser.add_argument('--password', type=str, default=None, help='The password for the new user.')
-    parser.add_argument('--enable-postgis', type=bool, default=True, help='Whether to enable PostGIS or not.')
+    parser.add_argument('--enable-postgis', type=bool, default=False, help='Whether to enable PostGIS or not.')
     args = parser.parse_args()
 
     if args.enable_postgis:

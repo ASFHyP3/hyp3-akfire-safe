@@ -77,7 +77,8 @@ jobs:
       - name: Enable PostGIS and create a read-only user
         shell: bash -l {0}
         run: |
-          DB_HOST=$(awk 'FNR == 4 {FS=": "; print $2}' output.json | sed s/["(\"|,)"]/""/g)
+          export DB_HOST=$(awk 'FNR == 4 {FS=": "; print $2}' output.json | sed s/["(\"|,)"]/""/g)
+          echo "Database Hostname: $DB_HOST"
           python -m pip install --no-deps .
           feds_db_setup \
             --username ${{ secrets.DB_READONLY_USERNAME }} \

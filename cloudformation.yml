@@ -37,6 +37,6 @@ Resources:
 
 
 Outputs:
-  ClusterEndpoint:
-    Description: Aurora Cluster Endpoint
-    Value: !GetAtt DBCluster.Endpoint.Address
+  InstanceEndpoint:
+    Description: Aurora DB Endpoint
+    Value: !GetAtt DBInstance.Endpoint.Address

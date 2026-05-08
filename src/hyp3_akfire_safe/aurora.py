@@ -1,5 +1,6 @@
 """feds aurora database."""
 
+import argparse
 import os
 from pathlib import Path
 from typing import Literal
@@ -66,32 +67,67 @@ def enable_postgis_extension() -> None:
     connection.commit()
 
 
-def check_postgis_extension() -> tuple | None:
-    """Verifies that the PostGIS extension is enabled on the PostgreSQL database."""
+def fetch_one_from_db(query: str) -> tuple | None:
+    """Queries the database and returns the result of `fetchone`.
+
+    Args:
+        query: The query to be run.
+
+    Returns:
+        The result of fetchone() after the query.
+    """
     connection = get_db_connection()
     with connection.cursor() as cursor:
-        cursor.execute('SELECT postgis_full_version();')
+        cursor.execute(query)
         result = cursor.fetchone()
     return result
+
+
+def check_postgis_extension() -> tuple | None:
+    """Verifies that the PostGIS extension is enabled on the PostgreSQL database."""
+    return fetch_one_from_db('SELECT postgis_full_version();')
+
+
+def check_users() -> tuple | None:
+    """Verifies that the PostGIS extension is enabled on the PostgreSQL database."""
+    return fetch_one_from_db('SELECT * FROM pg_catalog.pg_user;')
+
+
+def add_user_to_db(
+    username: str,
+    password: str,
+) -> None:
+    """Add a read-only user to the database.
+
+    Args:
+        username: The username of the new user.
+        password: The password of the new user.
+    """
+    connection = get_db_connection()
+    with connection.cursor() as cursor:
+        cursor.execute(f"""
+            CREATE USER {username} IF NOT EXISTS WITH PASSWORD \'{password}\';
+            GRANT SELECT ON ALL TABLES IN SCHEMA public TO {username};
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public
+            GRANT SELECT ON TABLES TO {username};
+        """)
+    connection.commit()
 
 
 def upload_parquet_to_db(
     geoparquet_path: str | Path,
     table_name: str = 'feds_table',
     schema: str = 'public',
-    index_label: str = 'fireID',
     if_exists: Literal['fail', 'replace', 'append'] = 'replace',
     geometry_columns: list[str] = ['hull', 'fline', 'nfp'],
 ) -> None:
     """Read a GeoParquet file and write its columns to Amazon RDS PostgreSQL/PostGIS.
 
     Args:
-    ----------
         geoparquet_path: Path to the input GeoParquet file.
         rds_uri: SQLAlchemy connection URI, for example: postgresql+psycopg2://user:password@host:5432/dbname
         table_name: Destination table name.
         schema: PostgreSQL schema name.
-        index_label: The name of the column to use as the index.
         if_exists: One of: "fail", "replace", or "append".
         geometry_columns: List of columns with geometry types.
     """
@@ -101,7 +137,6 @@ def upload_parquet_to_db(
         gdf=gdf,
         table_name=table_name,
         schema=schema,
-        index_label=index_label,
         if_exists=if_exists,
         geometry_columns=geometry_columns,
     )
@@ -111,19 +146,16 @@ def upload_gdf_to_db(
     gdf: gpd.geodataframe.GeoDataFrame,
     table_name: str = 'feds_table',
     schema: str = 'public',
-    index_label: str = 'fireID',
     if_exists: Literal['fail', 'replace', 'append'] = 'replace',
     geometry_columns: list[str] = ['hull', 'fline', 'nfp'],
 ) -> None:
     """Upload a GeoDataFrame to Amazon RDS PostgreSQL/PostGIS.
 
     Args:
-    -----
         gdf: The GeoDataFrame to upload.
         rds_uri: SQLAlchemy connection URI, for example: postgresql+psycopg2://user:password@host:5432/dbname
         table_name: Destination table name.
         schema: PostgreSQL schema name.
-        index_label: The name of the column to use as the index.
         if_exists: One of: "fail", "replace", or "append".
         geometry_columns: List of columns with geometry types.
     """
@@ -136,7 +168,33 @@ def upload_gdf_to_db(
         name=table_name,
         con=engine,
         schema=schema,
-        index_label=index_label,
         if_exists=if_exists,
         index=False,
     )
+
+
+def main() -> None:
+    """CLI Entrypoint for enabling postgis, and adding read-only users."""
+    parser = argparse.ArgumentParser(description='CLI entrypoint for adding read-only users and enabling PostGIS.')
+    parser.add_argument('--username', type=str, default=None, help='The username for the new user.')
+    parser.add_argument('--password', type=str, default=None, help='The password for the new user.')
+    parser.add_argument('--enable-postgis', type=bool, default=False, help='Whether to enable PostGIS or not.')
+    args = parser.parse_args()
+
+    if args.enable_postgis:
+        enable_postgis_extension()
+        result = check_postgis_extension()
+        assert result is not None
+
+    if args.username:
+        if args.password is None:
+            raise ValueError('A password is required when creating a new user.')
+
+        try:
+            add_user_to_db(args.username, args.password)
+        except psycopg2.errors.DuplicateObject:
+            print(f'User `{args.username}` already exists.')
+
+
+if __name__ == '__main__':
+    main()

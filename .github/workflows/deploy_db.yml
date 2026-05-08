@@ -14,7 +14,7 @@ jobs:
     permissions:
       contents: read
     with:
-      python_version: "3.13"
+      python_version: "3.12"
 
   deploy:
     permissions:
@@ -37,13 +37,13 @@ jobs:
 
       - uses: actions/setup-python@v6
         with:
-          python-version: 3.13
+          python-version: 3.12
 
       - uses: mamba-org/setup-micromamba@v2
         with:
           environment-file: environment.yml
           create-args: >-
-            python=3.13
+            python=3.12
 
       - run: |
           jq -n '{"Parameters": $ARGS.named}' \

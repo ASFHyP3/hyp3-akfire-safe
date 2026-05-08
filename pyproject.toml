@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "hyp3_akfire_safe"
 readme = "README.md"
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.11,<3.13"
 authors = [
     {name="ASF SciDev Team", email="uaf-asf-scidev@alaska.edu"},
 ]

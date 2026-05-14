@@ -47,7 +47,7 @@ jobs:
 
       - run: |
           jq -n '{"Parameters": $ARGS.named}' \
-            --arg VpcSecurityGroupIds '${{ secrets.VPC_SECURITY_GROUP_IDS }}' \
+            --arg VpcId '${{ secrets.VPC_ID }}' \
             --arg InstanceSubnetIds '${{ secrets.SUBNET_IDS }}' \
             > parameters.json
 

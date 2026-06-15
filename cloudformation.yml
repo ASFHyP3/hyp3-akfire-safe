@@ -13,6 +13,11 @@ Parameters:
     Default: 0.0.0.0/0
     Description: CIDR allowed to connect to PostgreSQL. Use 0.0.0.0/0 for public access.
 
+  DBName:
+    Type: String
+    Default: fire
+    Description: The database name that is used when connecting.
+
 Resources:
   DBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -46,6 +51,7 @@ Resources:
       EnableIAMDatabaseAuthentication: true
       MasterUsername: postgres
       MasterUserAuthenticationType: iam-db-auth
+      DatabaseName: !Ref DBName
 
   DBInstance:
     Type: AWS::RDS::DBInstance

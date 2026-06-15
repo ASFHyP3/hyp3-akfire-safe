@@ -17,7 +17,7 @@ DB_HOST = os.environ.get('DB_HOST', None)
 
 # AWS Defaults
 DB_PORT = os.environ.get('DB_PORT', 5432)
-DB_NAME = os.environ.get('DB_NAME', 'postgres')
+DB_NAME = os.environ.get('DB_NAME', 'fire')
 DB_USER = os.environ.get('DB_USER', 'postgres')
 AWS_REGION = os.environ.get('AWS_REGION', 'us-west-2')
 
@@ -106,7 +106,7 @@ def add_user_to_db(
     connection = get_db_connection()
     with connection.cursor() as cursor:
         cursor.execute(f"""
-            CREATE USER {username} IF NOT EXISTS WITH PASSWORD \'{password}\';
+            CREATE USER {username} WITH PASSWORD \'{password}\';
             GRANT SELECT ON ALL TABLES IN SCHEMA public TO {username};
             ALTER DEFAULT PRIVILEGES IN SCHEMA public
             GRANT SELECT ON TABLES TO {username};
@@ -171,6 +171,8 @@ def upload_gdf_to_db(
         if_exists=if_exists,
         index=False,
     )
+
+    print('Wrote parquet to db')
 
 
 def main() -> None:

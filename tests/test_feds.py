@@ -45,7 +45,7 @@ def test_feds():
     start = '2025-01-01T00:00'
     end = '2025-01-01T23:00'
     extent = '-169.01 52.37 -130.16 71.66'.split()
-    feds.feds(path, extent, start, end)
+    feds.feds(extent, path, start, end)
 
     output = Path('FEDS_PERIMETER_W169_W130_N52_N72_20250101T00:00_20250101T23:00.parquet')
     assert output.exists()

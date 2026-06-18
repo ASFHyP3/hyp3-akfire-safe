@@ -11,6 +11,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 - Added AWS Aurora RDS database for fire extent polygons and metadata.
 - Added the ability to automatically push fire extent polygons and metadata to the Aurora database.
+- Added parameters `input-bucket` and `input-prefix` to pull fire detection text files from s3 bucket.
 
 ## [3.1.0]
 

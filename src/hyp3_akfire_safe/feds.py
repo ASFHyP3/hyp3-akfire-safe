@@ -249,7 +249,9 @@ def main() -> None:
     parser = ArgumentParser()
     parser.add_argument('--bucket', help='AWS S3 bucket HyP3 for upload the final product(s)')
     parser.add_argument('--bucket-prefix', default='', help='Add a bucket prefix to product(s)')
-    parser.add_argument('--upload-to-db', type=string_is_true, default=False, help='Add the data to the AWS Aurora database.')
+    parser.add_argument(
+        '--upload-to-db', type=string_is_true, default=False, help='Add the data to the AWS Aurora database.'
+    )
     parser.add_argument(
         '--start-date', type=nullable_string, default=None, help='Start date of the images (YYYY-MM-DDTHH:MM)'
     )

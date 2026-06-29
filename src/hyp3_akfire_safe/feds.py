@@ -10,6 +10,7 @@ import boto3
 import botocore
 from fireatlas import FireMain, FireTime, postprocess, preprocess, settings
 from hyp3lib.aws import upload_file_to_s3
+from hyp3lib.util import string_is_true
 from tqdm.auto import tqdm
 
 import hyp3_akfire_safe as has
@@ -248,7 +249,9 @@ def main() -> None:
     parser = ArgumentParser()
     parser.add_argument('--bucket', help='AWS S3 bucket HyP3 for upload the final product(s)')
     parser.add_argument('--bucket-prefix', default='', help='Add a bucket prefix to product(s)')
-    parser.add_argument('--upload-to-db', type=bool, default=False, help='Add the data to the AWS Aurora database.')
+    parser.add_argument(
+        '--upload-to-db', type=string_is_true, default=False, help='Add the data to the AWS Aurora database.'
+    )
     parser.add_argument(
         '--start-date', type=nullable_string, default=None, help='Start date of the images (YYYY-MM-DDTHH:MM)'
     )

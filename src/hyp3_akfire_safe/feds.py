@@ -33,10 +33,11 @@ def download_data(input_bucket: str, input_prefix: str) -> None:
     buck = s3.Bucket(input_bucket)
     for s3_object in tqdm(buck.objects.filter(Prefix=f'{input_prefix}')):
         path, filename = os.path.split(s3_object.key)
-        date = dt.datetime.strptime(filename.split('_')[2], 'd%Y%m%d')
-        folder = Path(date.strftime('data/%Y/%m/%d'))
-        folder.mkdir(parents=True, exist_ok=True)
-        buck.download_file(s3_object.key, f'{str(folder)}/{filename}')
+        if '.txt' in filename:
+            date = dt.datetime.strptime(filename.split('_')[2], 'd%Y%m%d')
+            folder = Path(date.strftime('data/%Y/%m/%d'))
+            folder.mkdir(parents=True, exist_ok=True)
+            buck.download_file(s3_object.key, f'{str(folder)}/{filename}')
 
 
 def rewrite_files(

@@ -3,7 +3,7 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - python>=3.10,<3.13
+  - python>=3.11,<3.13
   - gdal=3.10
   - pip
   # For packaging, and testing
@@ -26,6 +26,11 @@ dependencies:
   # For plotting
   - folium
   - jupyterlab
+  # For the database:
+  - sqlalchemy
+  - psycopg2
+  - geoalchemy2
+  - pyarrow
   # TODO: insert conda-forge dependencies as list here
   - pip:
       - -r requirements-static.txt

@@ -6,10 +6,15 @@ import shutil
 from argparse import ArgumentParser
 from pathlib import Path
 
+import boto3
+import botocore
 from fireatlas import FireMain, FireTime, postprocess, preprocess, settings
 from hyp3lib.aws import upload_file_to_s3
+from hyp3lib.util import string_is_true
+from tqdm.auto import tqdm
 
 import hyp3_akfire_safe as has
+from hyp3_akfire_safe.aurora import upload_gdf_to_db
 
 
 settings.READ_LOCATION = 'local'
@@ -17,19 +22,51 @@ settings.remove_static_sources = True
 settings.LOCAL_PATH = '.'
 
 
-def rewrite_files(root: str) -> None:
-    """This rewrites the files so they have the same format of SNPP or NOAA20.
+def download_data(input_bucket: str, input_prefix: str) -> None:
+    """Download files from s3 bucket and make folder structure.
+
+    Args:
+        input_bucket: Bucket with fire detection text files.
+        input_prefix: Prefix with fire detection text files.
+    """
+    s3 = boto3.resource('s3', config=boto3.session.Config(signature_version=botocore.UNSIGNED))
+    buck = s3.Bucket(input_bucket)
+    for s3_object in tqdm(buck.objects.filter(Prefix=f'{input_prefix}')):
+        path, filename = os.path.split(s3_object.key)
+        if '.txt' in filename:
+            date = dt.datetime.strptime(filename.split('_')[2], 'd%Y%m%d')
+            folder = Path(date.strftime('data/%Y/%m/%d'))
+            folder.mkdir(parents=True, exist_ok=True)
+            buck.download_file(s3_object.key, f'{str(folder)}/{filename}')
+
+
+def rewrite_files(
+    root: str | None, input_bucket: str | None = None, input_prefix: str | None = None
+) -> tuple[dt.datetime, dt.datetime]:
+    """Rewrites the files so they have the same format of SNPP or NOAA20.
 
     Args:
         root: Path to the directory that has all the text files.
+        input_bucket: Bucket with fire detection text files.
+        input_prefix: Prefix with fire detection text files.
+
+    Returns:
+        start_date: First available date in the folder.
+        end_date: Last available date in the folder.
     """
+    if root is None:
+        download_data(str(input_bucket), str(input_prefix))
+        root = 'data'
+
     output_path = Path('./FEDSinput/VIIRS/VJ114IMGTDL')
     output_path.mkdir(parents=True, exist_ok=True)
     output = str(output_path)
+    dates = []
     for path, subdirs, files in os.walk(root):
         sfiles = [path + '/' + f for f in files]
         for sf in sfiles:
             fecha = dt.datetime.strptime(Path(sf).name.split('_')[2] + Path(sf).name.split('_')[3][0:5], 'd%Y%m%dt%H%M')
+            dates.append(fecha)
             with Path(sf).open() as f:
                 lines = [line.replace(' ', '') for line in f.readlines() if '#' not in line]
             outname = fecha.strftime('J1_VIIRS_C2_Global_VJ114IMGTDL_NRT_%Y%j.txt')
@@ -62,6 +99,9 @@ def rewrite_files(root: str) -> None:
             with Path(output + '/' + outname).open('w') as f:
                 for line in outlines:
                     f.write(line)
+    dates = sorted(dates)
+
+    return dates[0], dates[-1]
 
 
 def copy_aux() -> None:
@@ -103,13 +143,28 @@ def get_name(extent: list, start: str, end: str) -> str:
     return name
 
 
+def nullable_string(argument_string: str) -> str | None:
+    """Identify if string is None.
+
+    Takes:
+    argument_string: Input string.
+
+    Returns: None if input string is 'None' else input string
+    """
+    argument_string = argument_string.replace('None', '').strip()
+    return argument_string if argument_string else None
+
+
 def feds(
-    path: str,
     extent: list,
-    start: str,
-    end: str,
+    path: str | None = None,
+    start: str | None = None,
+    end: str | None = None,
+    input_bucket: str | None = None,
+    input_prefix: str | None = None,
     bucket: str | None = None,
     bucket_prefix: str = '',
+    upload_to_db: bool = False,
 ) -> None:
     """This runs the FEDS algorithm.
 
@@ -118,11 +173,19 @@ def feds(
         extent: List with lon/lat coordinates.
         start:  The start date of the images
         end:  The end date of the images
+        input_bucket: Bucket with fire detection text files.
+        input_prefix: Prefix with fire detection text files.
         bucket: AWS S3 bucket HyP3 for upload the final product(s)
         bucket_prefix: Add a bucket prefix to product(s)
+        upload_to_db: Whether or not to upload the data to an AWS Aurora database.
     """
     # This preprocess the files from GINA
-    rewrite_files(path)
+    if path is None and input_bucket is None:
+        raise ValueError('Local path and input bucket are not provided')
+    elif path is None and input_prefix is None:
+        raise ValueError('Local path and input prefix are not provided')
+
+    startt, endt = rewrite_files(path, input_bucket, input_prefix)
     copy_aux()
 
     # 01_Ingest
@@ -130,8 +193,17 @@ def feds(
 
     preprocess.preprocess_region(region, force=True)
 
-    start_date = dt.datetime.strptime(start, '%Y-%m-%dT%H:%M')
-    end_date = dt.datetime.strptime(end, '%Y-%m-%dT%H:%M')
+    if start is None:
+        start_date = startt
+        start = startt.strftime('%Y-%m-%dT%H:%M')
+    else:
+        start_date = dt.datetime.strptime(start, '%Y-%m-%dT%H:%M')
+
+    if end is None:
+        end_date = endt
+        end = endt.strftime('%Y-%m-%dT%H:%M')
+    else:
+        end_date = dt.datetime.strptime(end, '%Y-%m-%dT%H:%M')
 
     tst = [
         int(start_date.strftime('%Y')),
@@ -166,6 +238,9 @@ def feds(
     output_name = get_name(extent, start, end)
     allfires_gdf.to_parquet(output_name)
 
+    if upload_to_db:
+        upload_gdf_to_db(allfires_gdf)
+
     if bucket:
         upload_file_to_s3(Path(output_name), bucket, bucket_prefix)
 
@@ -175,26 +250,32 @@ def main() -> None:
     parser = ArgumentParser()
     parser.add_argument('--bucket', help='AWS S3 bucket HyP3 for upload the final product(s)')
     parser.add_argument('--bucket-prefix', default='', help='Add a bucket prefix to product(s)')
-    parser.add_argument('--start-date', type=str, help='Start date of the images (YYYY-MM-DDTHH:MM)')
-    parser.add_argument('--end-date', type=str, help='End date of the images (YYYY-MM-DDTHH:MM)')
-    # TODO: Your arguments here
     parser.add_argument(
-        '--extent',
-        type=str.split,
-        nargs='+',
-        help='min_lon min_lat max_lon max_lat',
+        '--upload-to-db', type=string_is_true, default=False, help='Add the data to the AWS Aurora database.'
     )
-    parser.add_argument('--path', type=str, help='Folder path with fire pixels')
+    parser.add_argument(
+        '--start-date', type=nullable_string, default=None, help='Start date of the images (YYYY-MM-DDTHH:MM)'
+    )
+    parser.add_argument(
+        '--end-date', type=nullable_string, default=None, help='End date of the images (YYYY-MM-DDTHH:MM)'
+    )
+    parser.add_argument('--extent', type=str.split, nargs='+', help='min_lon min_lat max_lon max_lat')
+    parser.add_argument('--path', type=nullable_string, default=None, help='Folder path with fire pixels')
+    parser.add_argument('--input-bucket', type=nullable_string, default=None, help='Bucket with fire detections')
+    parser.add_argument('--input-prefix', type=nullable_string, default=None, help='Prefix with fire detections')
 
     args = parser.parse_args()
 
     args.extent = [item for sublist in args.extent for item in sublist]
 
     feds(
-        path=args.path,
         extent=args.extent,
+        path=args.path,
         start=args.start_date,
         end=args.end_date,
         bucket=args.bucket,
         bucket_prefix=args.bucket_prefix,
+        input_bucket=args.input_bucket,
+        input_prefix=args.input_prefix,
+        upload_to_db=args.upload_to_db,
     )

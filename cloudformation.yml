@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Minimal Aurora PostgreSQL Cluster
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+
+  InstanceSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+
+  AllowedPostgresCidr:
+    Type: String
+    Default: 0.0.0.0/0
+    Description: CIDR allowed to connect to PostgreSQL. Use 0.0.0.0/0 for public access.
+
+  DBName:
+    Type: String
+    Default: fire
+    Description: The database name that is used when connecting.
+
+Resources:
+  DBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Public PostgreSQL access for Aurora
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          CidrIp: !Ref AllowedPostgresCidr
+          Description: PostgreSQL access
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group for Aurora
+      SubnetIds: !Ref InstanceSubnetIds
+
+  DBCluster:
+    Type: AWS::RDS::DBCluster
+    Properties:
+      Engine: aurora-postgresql
+      EngineVersion: "17.5"
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VpcSecurityGroupIds:
+        - !Ref DBSecurityGroup
+      EnableIAMDatabaseAuthentication: true
+      MasterUsername: postgres
+      MasterUserAuthenticationType: iam-db-auth
+      DatabaseName: !Ref DBName
+
+  DBInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBClusterIdentifier: !Ref DBCluster
+      DBInstanceClass: db.t3.medium
+      Engine: aurora-postgresql
+      PubliclyAccessible: true
+
+Outputs:
+  InstanceEndpoint:
+    Description: Aurora DB Endpoint
+    Value: !GetAtt DBInstance.Endpoint.Address

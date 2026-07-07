@@ -1,0 +1,86 @@
+name: Deploy database to AWS
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - develop
+
+jobs:
+  call-version-info-workflow:
+    # Docs: https://github.com/ASFHyP3/actions
+    uses: ASFHyP3/actions/.github/workflows/reusable-version-info.yml@v0.20.0
+    permissions:
+      contents: read
+    with:
+      python_version: "3.12"
+
+  deploy:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    env:
+      STACK_NAME: ${{ github.ref == 'refs/heads/main' && 'feds-db' || 'feds-db-test' }}
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.V2_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.V2_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: 3.12
+
+      - uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: environment.yml
+          create-args: >-
+            python=3.12
+
+      - run: |
+          jq -n '{"Parameters": $ARGS.named}' \
+            --arg VpcId '${{ secrets.VPC_ID }}' \
+            --arg InstanceSubnetIds '${{ secrets.SUBNET_IDS }}' \
+            > parameters.json
+
+      - name: Package and deploy
+        shell: bash
+        run: |
+          [ -z ${{ secrets.CLOUDFORMATION_ROLE_ARN }} ] && export ROLE_STATEMENT="" \
+            || export ROLE_STATEMENT="--role-arn ${{ secrets.CLOUDFORMATION_ROLE_ARN }}"
+
+          aws cloudformation package \
+            --template-file cloudformation.yml \
+            --s3-bucket ${{ secrets.TEMPLATE_BUCKET }} \
+            --output-template-file packaged.yml
+
+          aws cloudformation deploy \
+            --stack-name "$STACK_NAME" \
+            --template-file packaged.yml \
+            $ROLE_STATEMENT \
+            --capabilities CAPABILITY_IAM \
+            --parameter-overrides file://parameters.json
+
+          aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
+            --query 'Stacks[0].Outputs' \
+            --output json > output.json
+
+      - name: Enable PostGIS and create a read-only user
+        shell: bash -l {0}
+        run: |
+          export DB_HOST=$(awk 'FNR == 4 {FS=": "; print $2}' output.json | sed s/["(\"|,)"]/""/g)
+          echo "Database Hostname: $DB_HOST"
+          python -m pip install --no-deps .
+          feds_db_setup \
+            --username ${{ secrets.DB_READONLY_USERNAME }} \
+            --password ${{ secrets.DB_READONLY_PASSWORD }} \
+            --enable-postgis True

@@ -55,7 +55,7 @@ def get_db_engine() -> Engine:
         host=DB_HOST,
         database=DB_NAME,
     )
-    engine = create_engine(url_object, plugins=['geoalchemy2'])
+    engine = create_engine(url_object, plugins=['geoalchemy2'], connect_args={'sslmode': 'require'})
     return engine
 
 

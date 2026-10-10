@@ -10,7 +10,7 @@ on:
 jobs:
   call-version-info-workflow:
     # Docs: https://github.com/ASFHyP3/actions
-    uses: ASFHyP3/actions/.github/workflows/reusable-version-info.yml@v0.21.1
+    uses: ASFHyP3/actions/.github/workflows/reusable-version-info.yml@v0.22.0
     permissions:
       contents: read
     with:
@@ -26,7 +26,7 @@ jobs:
     env:
       STACK_NAME: ${{ github.ref == 'refs/heads/main' && 'feds-db' || 'feds-db-test' }}
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
@@ -35,7 +35,7 @@ jobs:
           role-to-assume: ${{ secrets.OIDC_ROLE_ARN }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: 3.12
 
